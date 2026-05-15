@@ -1,12 +1,3 @@
-import {
-  AutoProcessor,
-  Gemma3ForConditionalGeneration,
-  InterruptableStoppingCriteria,
-  TextStreamer,
-  load_image,
-  read_audio,
-} from "@huggingface/transformers";
-
 const MODEL_ID = "onnx-community/gemma-3-1b-it-GGUF";
 
 const originalFetch = globalThis.fetch.bind(globalThis);
@@ -52,11 +43,29 @@ globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
   return originalFetch(input, init);
 };
 
+let AutoProcessor: any;
+let Gemma3ForConditionalGeneration: any;
+let InterruptableStoppingCriteria: any;
+let TextStreamer: any;
+let load_image: any;
+let read_audio: any;
+
+async function loadTransformers() {
+  if (AutoProcessor) return;
+  const transformers = await import("https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.5.0/+esm");
+  AutoProcessor = transformers.AutoProcessor;
+  Gemma3ForConditionalGeneration = transformers.Gemma3ForConditionalGeneration;
+  InterruptableStoppingCriteria = transformers.InterruptableStoppingCriteria;
+  TextStreamer = transformers.TextStreamer;
+  load_image = transformers.load_image;
+  read_audio = transformers.read_audio;
+}
+
 class ModelSession {
-  processor: ReturnType<typeof AutoProcessor.from_pretrained> | null = null;
-  model: ReturnType<typeof Gemma3ForConditionalGeneration.from_pretrained> | null = null;
-  stoppingCriteria = new InterruptableStoppingCriteria();
-  loadingPromise: Promise<[unknown, unknown]> | null = null;
+  processor: any = null;
+  model: any = null;
+  stoppingCriteria: any = null;
+  loadingPromise: Promise<void> | null = null;
 
   async load() {
     if (this.model && this.processor) {
@@ -75,6 +84,20 @@ class ModelSession {
       data: "Initializing model download...",
     });
 
+    this.loadingPromise = this._load().finally(() => {
+      this.loadingPromise = null;
+    });
+
+    return this.loadingPromise;
+  }
+
+  async _load() {
+    await loadTransformers();
+
+    if (!this.stoppingCriteria) {
+      this.stoppingCriteria = new InterruptableStoppingCriteria();
+    }
+
     const progress_callback = (info: Record<string, unknown>) => {
       postDebug(
         info.status === "download"
@@ -92,26 +115,10 @@ class ModelSession {
         });
       } else if (info.status === "download") {
         const fileName = info.file ?? info.name ?? "model file";
-        const progress = info.progress ?? 0;
-        const total = info.total ?? 0;
-
         self.postMessage({
           status: "loading",
           data: `Downloading ${String(fileName)}...`,
         });
-
-        if (total && progress) {
-          const fileProgress = (Number(progress) / Number(total)) * 100;
-          self.postMessage({
-            status: "file_progress",
-            data: {
-              file: fileName,
-              progress: fileProgress,
-              loaded: progress,
-              total: total,
-            },
-          });
-        }
       } else if (info.status === "init") {
         self.postMessage({
           status: "loading",
@@ -125,39 +132,33 @@ class ModelSession {
       }
     };
 
-    this.loadingPromise = Promise.all([
-      AutoProcessor.from_pretrained(MODEL_ID, { progress_callback }),
-      Gemma3ForConditionalGeneration.from_pretrained(MODEL_ID, {
-        dtype: "q4",
-        device: "webgpu",
-        progress_callback,
-      }),
-    ])
-      .then(([processor, model]) => {
-        this.processor = processor as never;
-        this.model = model as never;
-        self.postMessage({ status: "ready" });
-      })
-      .catch((error) => {
-        self.postMessage({
-          status: "error",
-          data: error instanceof Error ? error.message : String(error),
-        });
-        throw error;
-      })
-      .finally(() => {
-        this.loadingPromise = null;
+    try {
+      const [processor, model] = await Promise.all([
+        AutoProcessor.from_pretrained(MODEL_ID, { progress_callback }),
+        Gemma3ForConditionalGeneration.from_pretrained(MODEL_ID, {
+          dtype: "q4",
+          device: "webgpu",
+          progress_callback,
+        }),
+      ]);
+      this.processor = processor;
+      this.model = model;
+      self.postMessage({ status: "ready" });
+    } catch (error) {
+      self.postMessage({
+        status: "error",
+        data: error instanceof Error ? error.message : String(error),
       });
-
-    return this.loadingPromise;
+      throw error;
+    }
   }
 
   interrupt() {
-    this.stoppingCriteria.interrupt();
+    this.stoppingCriteria?.interrupt();
   }
 
   reset() {
-    this.stoppingCriteria.reset();
+    this.stoppingCriteria?.reset();
   }
 }
 
@@ -168,7 +169,7 @@ async function prepareInputs(
   enableThinking: boolean,
 ) {
   const lastMessage = messages.at(-1);
-  const prompt = (session.processor as never).apply_chat_template([lastMessage], {
+  const prompt = session.processor.apply_chat_template([lastMessage], {
     add_generation_prompt: true,
     enable_thinking: enableThinking,
   });
@@ -185,12 +186,16 @@ async function prepareInputs(
         ? new Float32Array(audioPart.audio as number[])
         : null;
 
-  return (session.processor as never)(prompt, image, audio, {
+  return session.processor(prompt, image, audio, {
     add_special_tokens: false,
   });
 }
 
-async function generate(messages: Array<{ role: string; content: string | Array<{ type: string; [key: string]: unknown }> }>, enableThinking: boolean, maxNewTokens: number) {
+async function generate(
+  messages: Array<{ role: string; content: string | Array<{ type: string; [key: string]: unknown }> }>,
+  enableThinking: boolean,
+  maxNewTokens: number,
+) {
   await session.load();
   session.reset();
 
@@ -200,7 +205,7 @@ async function generate(messages: Array<{ role: string; content: string | Array<
 
   let outputText = "";
 
-  const streamer = new TextStreamer((session.processor as never).tokenizer, {
+  const streamer = new TextStreamer(session.processor.tokenizer, {
     skip_prompt: true,
     skip_special_tokens: true,
     callback_function: (text: string) => {
@@ -213,7 +218,7 @@ async function generate(messages: Array<{ role: string; content: string | Array<
   });
 
   const startedAt = performance.now();
-  const outputs = await (session.model as never).generate({
+  const outputs = await session.model.generate({
     ...inputs,
     max_new_tokens: maxNewTokens,
     do_sample: false,
@@ -227,7 +232,7 @@ async function generate(messages: Array<{ role: string; content: string | Array<
   const elapsedSeconds = Math.max((performance.now() - startedAt) / 1000, 0.001);
 
   if (!outputText) {
-    const decoded = (session.processor as never).batch_decode(generated, {
+    const decoded = session.processor.batch_decode(generated, {
       skip_special_tokens: true,
     });
     outputText = decoded[0] ?? "";
