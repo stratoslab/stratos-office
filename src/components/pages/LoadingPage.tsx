@@ -1,6 +1,6 @@
 import { motion } from "motion/react";
 import { Microscope, ShieldCheck, Clock, AlertTriangle, RotateCcw } from "lucide-react";
-import { useModel } from "@/context/ModelContext";
+import { useModel } from "../../context/ModelContext";
 
 export default function LoadingPage() {
   const { state, loadModel, clearError } = useModel();
