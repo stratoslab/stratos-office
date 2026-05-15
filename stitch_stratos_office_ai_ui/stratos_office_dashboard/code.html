@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-container": "#04203b",
+                        "primary-fixed-dim": "#3cd7ff",
+                        "on-secondary-fixed-variant": "#005047",
+                        "tertiary-container": "#feb528",
+                        "error-container": "#93000a",
+                        "error": "#ffb4ab",
+                        "primary-container": "#00d4ff",
+                        "secondary-container": "#00e5cc",
+                        "background": "#00142a",
+                        "surface-variant": "#1e3652",
+                        "on-primary-fixed-variant": "#004e5f",
+                        "outline": "#859398",
+                        "primary": "#a8e8ff",
+                        "surface-tint": "#3cd7ff",
+                        "on-tertiary-fixed-variant": "#604100",
+                        "on-tertiary": "#432c00",
+                        "surface-container-high": "#122b46",
+                        "secondary": "#6fffe8",
+                        "surface-bright": "#233a56",
+                        "tertiary-fixed-dim": "#ffba3d",
+                        "on-background": "#d2e4ff",
+                        "surface-container-lowest": "#000f21",
+                        "surface-container-low": "#001c37",
+                        "on-secondary": "#003730",
+                        "secondary-fixed": "#41fce2",
+                        "on-error-container": "#ffdad6",
+                        "tertiary-fixed": "#ffdeae",
+                        "surface-dim": "#00142a",
+                        "on-primary-container": "#00586b",
+                        "on-surface": "#d2e4ff",
+                        "on-secondary-fixed": "#00201b",
+                        "inverse-primary": "#00677e",
+                        "primary-fixed": "#b4ebff",
+                        "on-secondary-container": "#006156",
+                        "surface-container-highest": "#1e3652",
+                        "on-primary": "#003642",
+                        "secondary-fixed-dim": "#00dfc6",
+                        "inverse-surface": "#d2e4ff",
+                        "outline-variant": "#3c494e",
+                        "on-tertiary-container": "#6c4900",
+                        "on-primary-fixed": "#001f27",
+                        "on-error": "#690005",
+                        "surface": "#00142a",
+                        "on-tertiary-fixed": "#281900",
+                        "inverse-on-surface": "#19324d",
+                        "tertiary": "#ffd9a1",
+                        "on-surface-variant": "#bbc9cf"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "xl": "64px",
+                        "margin-mobile": "16px",
+                        "lg": "40px",
+                        "margin-desktop": "48px",
+                        "xs": "4px",
+                        "sm": "12px",
+                        "base": "8px",
+                        "gutter": "24px",
+                        "md": "24px"
+                    },
+                    "fontFamily": {
+                        "body-lg": ["Outfit"],
+                        "body-sm": ["Outfit"],
+                        "label-md": ["Outfit"],
+                        "label-sm": ["Outfit"],
+                        "headline-xl": ["Outfit"],
+                        "headline-lg": ["Outfit"],
+                        "body-md": ["Outfit"],
+                        "headline-md": ["Outfit"],
+                        "headline-lg-mobile": ["Outfit"]
+                    },
+                    "fontSize": {
+                        "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                        "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                        "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                        "label-sm": ["11px", {"lineHeight": "14px", "fontWeight": "500"}],
+                        "headline-xl": ["40px", {"lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                        "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                        "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                        "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                        "headline-lg-mobile": ["28px", {"lineHeight": "36px", "fontWeight": "600"}]
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-panel {
+            background: rgba(10, 37, 64, 0.4);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .glass-floating {
+            background: rgba(10, 37, 64, 0.6);
+            backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.05);
+        }
+        .ai-pulse {
+            box-shadow: 0 0 0 0 rgba(0, 229, 204, 0.4);
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 229, 204, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(0, 229, 204, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 229, 204, 0); }
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background font-body-md selection:bg-primary-container selection:text-on-primary-container min-h-screen flex flex-col">
+<!-- TopAppBar -->
+<header class="fixed top-0 z-50 flex justify-between items-center w-full px-md h-16 bg-surface/40 backdrop-blur-md border-b border-white/10 shadow-sm">
+<div class="flex items-center gap-base">
+<span class="font-headline-md text-headline-md font-bold text-primary">Stratos Office</span>
+</div>
+<div class="flex items-center gap-md">
+<div class="hidden md:flex items-center bg-surface-variant/30 rounded-full px-sm py-xs border border-white/5">
+<span class="material-symbols-outlined text-outline mr-base">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-body-sm text-on-surface-variant w-64" placeholder="Search insights..." type="text"/>
+</div>
+<div class="flex items-center gap-sm">
+<button class="p-xs rounded-full hover:bg-white/5 transition-colors text-on-surface-variant active:scale-95 duration-100">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<button class="p-xs rounded-full hover:bg-white/5 transition-colors text-on-surface-variant active:scale-95 duration-100 relative">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-1 right-1 w-2 h-2 bg-secondary rounded-full"></span>
+</button>
+<div class="flex items-center gap-sm pl-base border-l border-white/10 ml-base">
+<img alt="User profile avatar" class="w-8 h-8 rounded-full border border-primary/20" data-alt="A professional headshot of a modern corporate executive with a clean, high-contrast aesthetic. The lighting is sophisticated, using cool cyan highlights to match the dark navy and glassmorphism UI background. The subject has a confident expression, set against a blurred, tech-focused office environment with soft glowing digital elements." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDwrjPIy2ePrUn4FAujpFQhnvQgzO4F-eFe3zh-0Rn4WDnyqhI1CLJy3F80kBi0_Bl-WF0VT5fKfHCvBMrA65JhEu9ifstrHKL2O8vQrVcqgFsTmFHys3h6cSPNDcylKX7hsdYZdzR6imQyftkUhvOhD5u9iyakNeV9qr3_0qe5BZ9v8HEW2eULYw8GjQF1SMyDvAhyLmnCjYBWvCiLge3osS6WkPs-ptQE1OKqw52E8xR6bktOnhXx8uvW2aaOj_WlCRZA7BmQWRTC"/>
+</div>
+</div>
+</div>
+</header>
+<div class="flex flex-1 pt-16 h-screen overflow-hidden">
+<!-- SideNavBar -->
+<aside class="hidden md:flex flex-col h-full py-md bg-surface-container/40 backdrop-blur-xl border-r border-white/10 w-64 flex-shrink-0">
+<div class="px-md mb-lg">
+<div class="flex items-center gap-sm mb-md">
+<div class="w-10 h-10 rounded-xl bg-primary-container flex items-center justify-center shadow-lg shadow-primary-container/20">
+<span class="material-symbols-outlined text-on-primary-container" style="font-variation-settings: 'FILL' 1;">biotech</span>
+</div>
+<div>
+<p class="font-label-md text-label-md text-primary-container">Stratos Office</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Gemma 4 Active</p>
+</div>
+</div>
+<button class="w-full py-sm bg-primary-container text-on-primary-container font-label-md rounded-lg hover:brightness-110 transition-all duration-200 active:scale-95">
+                    New Analysis
+                </button>
+</div>
+<nav class="flex-1 px-sm space-y-xs overflow-y-auto">
+<a class="flex items-center gap-sm px-md py-sm rounded-lg bg-primary-container/10 text-primary-fixed-dim border-r-2 border-primary-fixed-dim transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined">description</span>
+<span class="font-label-md text-label-md">Documents</span>
+</a>
+<a class="flex items-center gap-sm px-md py-sm rounded-lg text-on-surface-variant hover:bg-white/5 transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined">image</span>
+<span class="font-label-md text-label-md">Visual</span>
+</a>
+<a class="flex items-center gap-sm px-md py-sm rounded-lg text-on-surface-variant hover:bg-white/5 transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined">mic</span>
+<span class="font-label-md text-label-md">Audio</span>
+</a>
+<a class="flex items-center gap-sm px-md py-sm rounded-lg text-on-surface-variant hover:bg-white/5 transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined">edit_note</span>
+<span class="font-label-md text-label-md">Text</span>
+</a>
+<a class="flex items-center gap-sm px-md py-sm rounded-lg text-on-surface-variant hover:bg-white/5 transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined">biotech</span>
+<span class="font-label-md text-label-md">Research</span>
+</a>
+</nav>
+<div class="mt-auto px-sm pt-md border-t border-white/5 space-y-xs">
+<a class="flex items-center gap-sm px-md py-sm rounded-lg text-on-surface-variant hover:bg-white/5 transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined">history</span>
+<span class="font-label-md text-label-md">History</span>
+</a>
+<a class="flex items-center gap-sm px-md py-sm rounded-lg text-on-surface-variant hover:bg-white/5 transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-md text-label-md">Settings</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 overflow-y-auto p-md md:p-lg bg-background relative pb-24">
+<!-- Background Accent Glow -->
+<div class="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/5 blur-[120px] rounded-full -z-10 pointer-events-none"></div>
+<header class="mb-lg">
+<h1 class="font-headline-lg text-headline-lg text-on-surface mb-xs">Welcome back, Strategist</h1>
+<p class="font-body-md text-body-md text-on-surface-variant">Your AI workspace is primed and ready for new insights.</p>
+</header>
+<!-- Quick Start Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-gutter">
+<!-- Card 1 -->
+<div class="glass-panel rounded-xl p-md group cursor-pointer hover:border-primary-container transition-all duration-300 relative overflow-hidden">
+<div class="flex items-center justify-between mb-md">
+<div class="w-12 h-12 rounded-lg bg-surface-container-highest flex items-center justify-center text-primary-fixed-dim">
+<span class="material-symbols-outlined text-2xl">document_scanner</span>
+</div>
+<span class="material-symbols-outlined text-outline opacity-0 group-hover:opacity-100 transition-opacity">north_east</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface mb-xs">Document OCR</h3>
+<p class="font-body-sm text-body-sm text-outline mb-md">Extract structured data from scanned PDFs and images with 99.9% accuracy.</p>
+<div class="flex items-center gap-xs">
+<span class="px-sm py-1 rounded-full bg-secondary-container/10 text-secondary text-label-sm font-label-sm">v2.4 Engine</span>
+<span class="px-sm py-1 rounded-full bg-surface-variant/50 text-outline text-label-sm font-label-sm">High Priority</span>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="glass-panel rounded-xl p-md group cursor-pointer hover:border-primary-container transition-all duration-300 relative overflow-hidden">
+<div class="flex items-center justify-between mb-md">
+<div class="w-12 h-12 rounded-lg bg-surface-container-highest flex items-center justify-center text-primary-fixed-dim">
+<span class="material-symbols-outlined text-2xl">receipt_long</span>
+</div>
+<span class="material-symbols-outlined text-outline opacity-0 group-hover:opacity-100 transition-opacity">north_east</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface mb-xs">Receipt Parser</h3>
+<p class="font-body-sm text-body-sm text-outline mb-md">Automatically categorize expenses and export directly to financial ledgers.</p>
+<div class="flex items-center gap-xs">
+<span class="px-sm py-1 rounded-full bg-secondary-container/10 text-secondary text-label-sm font-label-sm">Financial AI</span>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="glass-panel rounded-xl p-md group cursor-pointer hover:border-primary-container transition-all duration-300 relative overflow-hidden">
+<div class="flex items-center justify-between mb-md">
+<div class="w-12 h-12 rounded-lg bg-surface-container-highest flex items-center justify-center text-primary-fixed-dim">
+<span class="material-symbols-outlined text-2xl">transcribe</span>
+</div>
+<span class="material-symbols-outlined text-outline opacity-0 group-hover:opacity-100 transition-opacity">north_east</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface mb-xs">Meeting Transcription</h3>
+<p class="font-body-sm text-body-sm text-outline mb-md">Real-time speaker identification and action item summary generation.</p>
+<div class="flex items-center gap-xs">
+<span class="px-sm py-1 rounded-full bg-secondary-container/10 text-secondary text-label-sm font-label-sm">Live Sync</span>
+<span class="px-sm py-1 rounded-full bg-surface-variant/50 text-outline text-label-sm font-label-sm">Multilingual</span>
+</div>
+</div>
+<!-- Card 4 -->
+<div class="glass-panel rounded-xl p-md group cursor-pointer hover:border-primary-container transition-all duration-300 relative overflow-hidden">
+<div class="flex items-center justify-between mb-md">
+<div class="w-12 h-12 rounded-lg bg-surface-container-highest flex items-center justify-center text-primary-fixed-dim">
+<span class="material-symbols-outlined text-2xl">mail</span>
+</div>
+<span class="material-symbols-outlined text-outline opacity-0 group-hover:opacity-100 transition-opacity">north_east</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface mb-xs">Email Draft</h3>
+<p class="font-body-sm text-body-sm text-outline mb-md">Context-aware drafting based on your unique communication style and history.</p>
+<div class="flex items-center gap-xs">
+<span class="px-sm py-1 rounded-full bg-secondary-container/10 text-secondary text-label-sm font-label-sm">NLP Core</span>
+</div>
+</div>
+<!-- Card 5 -->
+<div class="glass-panel rounded-xl p-md group cursor-pointer hover:border-primary-container transition-all duration-300 relative overflow-hidden">
+<div class="flex items-center justify-between mb-md">
+<div class="w-12 h-12 rounded-lg bg-surface-container-highest flex items-center justify-center text-primary-fixed-dim">
+<span class="material-symbols-outlined text-2xl">monitoring</span>
+</div>
+<span class="material-symbols-outlined text-outline opacity-0 group-hover:opacity-100 transition-opacity">north_east</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface mb-xs">Chart Extract</h3>
+<p class="font-body-sm text-body-sm text-outline mb-md">Transform images of charts and graphs into raw CSV or Excel datasets.</p>
+<div class="flex items-center gap-xs">
+<span class="px-sm py-1 rounded-full bg-secondary-container/10 text-secondary text-label-sm font-label-sm">Vision Pro</span>
+</div>
+</div>
+<!-- Card 6 -->
+<div class="glass-panel rounded-xl p-md group cursor-pointer hover:border-primary-container transition-all duration-300 relative overflow-hidden">
+<div class="flex items-center justify-between mb-md">
+<div class="w-12 h-12 rounded-lg bg-surface-container-highest flex items-center justify-center text-primary-fixed-dim">
+<span class="material-symbols-outlined text-2xl">search_insights</span>
+</div>
+<span class="material-symbols-outlined text-outline opacity-0 group-hover:opacity-100 transition-opacity">north_east</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-on-surface mb-xs">Web Research</h3>
+<p class="font-body-sm text-body-sm text-outline mb-md">Deep-dive internet analysis with source verification and citation mapping.</p>
+<div class="flex items-center gap-xs">
+<span class="px-sm py-1 rounded-full bg-secondary-container/10 text-secondary text-label-sm font-label-sm">Deep Web</span>
+<span class="px-sm py-1 rounded-full bg-surface-variant/50 text-outline text-label-sm font-label-sm">Academic</span>
+</div>
+</div>
+</div>
+<!-- Dashboard Insight Section -->
+<section class="mt-xl">
+<div class="glass-panel rounded-2xl overflow-hidden">
+<div class="flex flex-col md:flex-row">
+<div class="md:w-1/2 p-lg">
+<div class="flex items-center gap-base mb-sm">
+<div class="w-2 h-2 rounded-full bg-secondary ai-pulse"></div>
+<span class="font-label-md text-label-md text-secondary tracking-widest uppercase">AI Intelligence Digest</span>
+</div>
+<h2 class="font-headline-lg text-headline-lg text-on-surface mb-md">Current Analysis: Enterprise Logistics</h2>
+<p class="font-body-md text-body-md text-on-surface-variant mb-lg">Stratos is currently processing 1,204 pending documents from your connected cloud storage. Predicted completion time is approximately 4 minutes.</p>
+<div class="flex flex-wrap gap-md">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-outline">Queue Depth</span>
+<span class="font-headline-md text-headline-md text-primary">1.2k</span>
+</div>
+<div class="w-px h-10 bg-white/10"></div>
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-outline">Compute Usage</span>
+<span class="font-headline-md text-headline-md text-secondary">42%</span>
+</div>
+<div class="w-px h-10 bg-white/10"></div>
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-outline">Threat Level</span>
+<span class="font-headline-md text-headline-md text-on-surface">None</span>
+</div>
+</div>
+</div>
+<div class="md:w-1/2 min-h-[300px] relative bg-surface-container-highest">
+<img alt="Data visualization background" class="w-full h-full object-cover mix-blend-screen opacity-50" data-alt="A highly detailed 3D visualization of complex data streams and neural network nodes, rendered in a sophisticated dark theme. The scene features glowing cyan and teal light trails that represent information flow through a futuristic digital space. The lighting is low-key with intense neon accents, creating a high-tech, secure AI environment mood consistent with professional data analytics software." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA_cG2xBsJGDgn0NHSNlM8cJnMgl12ueI0_OPh7Ilc5ypfvGknOGyP91xD-iUC9MgueHL-KS8yjtzDAJUdJ4bqJJXtHqNrOoEitrf03Q2FlBiKYX78jGlyBhn3ZzzNz4IRUXFqSDtwDlq7IJRWIpZg7VOYM4g1T07uWflRSXOTnQ-YOYMsqCmjLtPQNFv2Gm8luGyma7rnh2__3YQNOAIkjGbCHMCKWqE_ImLa1hJ8KBD2xwj0rgJn-Ld2vvqqepUD-g2CeDlWJWkgQ"/>
+<div class="absolute inset-0 bg-gradient-to-r from-surface-container-highest to-transparent"></div>
+</div>
+</div>
+</div>
+</section>
+</main>
+</div>
+<!-- Bottom Status Bar -->
+<footer class="fixed bottom-0 z-50 flex justify-between items-center w-full px-lg h-10 bg-surface-container-lowest/20 backdrop-blur-sm border-t border-white/5">
+<div class="flex items-center gap-md">
+<div class="flex items-center gap-xs">
+<div class="w-2 h-2 rounded-full bg-secondary shadow-[0_0_8px_#00e5cc]"></div>
+<span class="font-label-sm text-label-sm text-on-surface">Ready</span>
+</div>
+<div class="flex items-center gap-xs border-l border-white/10 pl-md">
+<span class="material-symbols-outlined text-[16px] text-outline">speed</span>
+<span class="font-label-sm text-label-sm text-outline">Token speed: <span class="text-primary-fixed-dim">124 t/s</span></span>
+</div>
+</div>
+<div class="flex items-center gap-lg">
+<div class="hidden sm:flex items-center gap-md">
+<a class="font-label-sm text-label-sm text-outline hover:text-primary transition-colors" href="#">Privacy</a>
+<a class="font-label-sm text-label-sm text-outline hover:text-primary transition-colors" href="#">Terms</a>
+<a class="font-label-sm text-label-sm text-outline hover:text-primary transition-colors" href="#">API Status</a>
+</div>
+<div class="flex items-center gap-xs border-l border-white/10 pl-md">
+<span class="font-label-sm text-label-sm text-outline">Version:</span>
+<span class="font-label-sm text-label-sm text-primary">v4.0.2-pro</span>
+</div>
+</div>
+</footer>
+</body></html>

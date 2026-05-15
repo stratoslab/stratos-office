@@ -1,0 +1,363 @@
+<html class="dark"><head>
+<meta charset="utf-8"/>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          "colors": {
+            "surface-container": "#04203b",
+            "primary-fixed-dim": "#3cd7ff",
+            "on-secondary-fixed-variant": "#005047",
+            "tertiary-container": "#feb528",
+            "error-container": "#93000a",
+            "error": "#ffb4ab",
+            "primary-container": "#00d4ff",
+            "secondary-container": "#00e5cc",
+            "background": "#00142a",
+            "surface-variant": "#1e3652",
+            "on-primary-fixed-variant": "#004e5f",
+            "outline": "#859398",
+            "primary": "#a8e8ff",
+            "surface-tint": "#3cd7ff",
+            "on-tertiary-fixed-variant": "#604100",
+            "on-tertiary": "#432c00",
+            "surface-container-high": "#122b46",
+            "secondary": "#6fffe8",
+            "surface-bright": "#233a56",
+            "tertiary-fixed-dim": "#ffba3d",
+            "on-background": "#d2e4ff",
+            "surface-container-lowest": "#000f21",
+            "surface-container-low": "#001c37",
+            "on-secondary": "#003730",
+            "secondary-fixed": "#41fce2",
+            "on-error-container": "#ffdad6",
+            "tertiary-fixed": "#ffdeae",
+            "surface-dim": "#00142a",
+            "on-primary-container": "#00586b",
+            "on-surface": "#d2e4ff",
+            "on-secondary-fixed": "#00201b",
+            "inverse-primary": "#00677e",
+            "primary-fixed": "#b4ebff",
+            "on-secondary-container": "#006156",
+            "surface-container-highest": "#1e3652",
+            "on-primary": "#003642",
+            "secondary-fixed-dim": "#00dfc6",
+            "inverse-surface": "#d2e4ff",
+            "outline-variant": "#3c494e",
+            "on-tertiary-container": "#6c4900",
+            "on-primary-fixed": "#001f27",
+            "on-error": "#690005",
+            "surface": "#00142a",
+            "on-tertiary-fixed": "#281900",
+            "inverse-on-surface": "#19324d",
+            "tertiary": "#ffd9a1",
+            "on-surface-variant": "#bbc9cf"
+          },
+          "borderRadius": {
+            "DEFAULT": "0.25rem",
+            "lg": "0.5rem",
+            "xl": "0.75rem",
+            "full": "9999px"
+          },
+          "spacing": {
+            "xl": "64px",
+            "margin-mobile": "16px",
+            "lg": "40px",
+            "margin-desktop": "48px",
+            "xs": "4px",
+            "sm": "12px",
+            "base": "8px",
+            "gutter": "24px",
+            "md": "24px"
+          },
+          "fontFamily": {
+            "body-lg": ["Outfit"],
+            "body-sm": ["Outfit"],
+            "label-md": ["Outfit"],
+            "label-sm": ["Outfit"],
+            "headline-xl": ["Outfit"],
+            "headline-lg": ["Outfit"],
+            "body-md": ["Outfit"],
+            "headline-md": ["Outfit"],
+            "headline-lg-mobile": ["Outfit"]
+          },
+          "fontSize": {
+            "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+            "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+            "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+            "label-sm": ["11px", {"lineHeight": "14px", "fontWeight": "500"}],
+            "headline-xl": ["40px", {"lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+            "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+            "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+            "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+            "headline-lg-mobile": ["28px", {"lineHeight": "36px", "fontWeight": "600"}]
+          }
+        },
+      },
+    }
+  </script>
+<style>
+    .glass-panel {
+      background: rgba(10, 37, 64, 0.4);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .custom-slider {
+      -webkit-appearance: none;
+      width: 100%;
+      height: 4px;
+      background: #1e3652;
+      border-radius: 2px;
+      outline: none;
+    }
+    .custom-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      background: #00d4ff;
+      cursor: pointer;
+      border-radius: 50%;
+      box-shadow: 0 0 10px rgba(0, 212, 255, 0.4);
+    }
+    .toggle-switch {
+      width: 40px;
+      height: 20px;
+      background: #1e3652;
+      border-radius: 20px;
+      position: relative;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    .toggle-switch.active {
+      background: #00d4ff;
+    }
+    .toggle-knob {
+      width: 16px;
+      height: 16px;
+      background: white;
+      border-radius: 50%;
+      position: absolute;
+      top: 2px;
+      left: 2px;
+      transition: left 0.3s;
+    }
+    .toggle-switch.active .toggle-knob {
+      left: 22px;
+    }
+  </style>
+</head>
+<body class="bg-background text-on-background min-h-screen font-body-md overflow-hidden">
+<!-- Background Canvas for Context -->
+<div class="fixed inset-0 z-0 flex items-center justify-center pointer-events-none opacity-20">
+<div class="w-[800px] h-[800px] bg-primary-container/20 rounded-full blur-[120px]"></div>
+<div class="absolute top-1/4 right-1/4 w-[400px] h-[400px] bg-secondary-container/10 rounded-full blur-[100px]"></div>
+</div>
+<!-- Shared TopAppBar Component -->
+<header class="fixed top-0 left-0 right-0 z-40 bg-surface/40 backdrop-blur-md text-primary-fixed-dim border-b border-white/10 flex justify-between items-center w-full px-md h-16">
+<div class="flex items-center gap-sm">
+<span class="font-headline-md text-headline-md font-bold text-primary">Stratos Office</span>
+</div>
+<div class="flex items-center gap-md">
+<div class="hidden md:flex items-center bg-white/5 rounded-lg px-sm py-xs border border-white/10">
+<span class="material-symbols-outlined text-outline text-[20px]">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-body-sm text-on-surface-variant w-48" placeholder="Search insights..." type="text"/>
+</div>
+<div class="flex items-center gap-sm">
+<button class="p-2 hover:bg-white/5 transition-colors rounded-full text-on-surface-variant active:scale-95 duration-100">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="p-2 hover:bg-white/5 transition-colors rounded-full text-primary-fixed-dim active:scale-95 duration-100">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<div class="w-8 h-8 rounded-full overflow-hidden border border-primary/20">
+<img alt="User profile avatar" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC0UYOGrX8urfTHnj0COCXC7AAdYoAa4hJrgqS0rHTn37ljM3IB0P14y1MoJv4bymI35wXahs0KN5IorV1l8bOtusja87hC59B6QMhHUwaXpqRxtYk0sjRVpyhx0-gpXBIpCpGmF1Feq7qOC_P_oifIP0Edemff693RzyItcWflqaW0ouDQUOUpaQSSHUrpJ1bcTYI6Y-hQXDQO16MEkmohvyIepHyTIlpekEpMEIHW2WuSzAOPJnZRyyh_pIeJGPRlvJGgmGlSNJzB"/>
+</div>
+</div>
+</div>
+</header>
+<!-- SideNavBar for Context -->
+<aside class="fixed left-0 top-16 h-[calc(100vh-64px)] w-64 bg-surface-container/40 backdrop-blur-xl border-r border-white/10 flex flex-col py-md z-30">
+<div class="px-md mb-lg">
+<div class="flex items-center gap-sm mb-xs">
+<div class="w-8 h-8 rounded bg-primary-container flex items-center justify-center">
+<span class="material-symbols-outlined text-on-primary-container text-[20px]">hub</span>
+</div>
+<div>
+<div class="font-label-md text-label-md text-primary-fixed-dim uppercase tracking-wider">Stratos Office</div>
+<div class="font-body-sm text-body-sm text-on-surface-variant opacity-70">Gemma 4 Active</div>
+</div>
+</div>
+</div>
+<nav class="flex-1 space-y-1">
+<div class="px-sm py-2 mx-md rounded-lg bg-primary-container/10 text-primary-fixed-dim border-r-2 border-primary-fixed-dim flex items-center gap-sm">
+<span class="material-symbols-outlined">description</span>
+<span class="font-label-md text-label-md">Documents</span>
+</div>
+<div class="px-sm py-2 mx-md rounded-lg text-on-surface-variant hover:bg-white/5 transition-all flex items-center gap-sm">
+<span class="material-symbols-outlined">image</span>
+<span class="font-label-md text-label-md">Visual</span>
+</div>
+<div class="px-sm py-2 mx-md rounded-lg text-on-surface-variant hover:bg-white/5 transition-all flex items-center gap-sm">
+<span class="material-symbols-outlined">mic</span>
+<span class="font-label-md text-label-md">Audio</span>
+</div>
+</nav>
+<div class="px-md pt-md mt-auto border-t border-white/5">
+<div class="px-sm py-2 rounded-lg text-on-surface-variant hover:bg-white/5 transition-all flex items-center gap-sm">
+<span class="material-symbols-outlined">history</span>
+<span class="font-label-md text-label-md">History</span>
+</div>
+<div class="px-sm py-2 rounded-lg text-primary-fixed-dim bg-white/5 transition-all flex items-center gap-sm">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-md text-label-md">Settings</span>
+</div>
+</div>
+</aside>
+<!-- Overlay -->
+<div class="fixed inset-0 bg-background/60 backdrop-blur-sm z-40"></div>
+<!-- Settings Slide-in Panel (360px) -->
+<div class="fixed top-0 right-0 h-screen w-[360px] glass-panel z-50 flex flex-col shadow-2xl border-l border-white/10">
+<!-- Panel Header -->
+<div class="h-16 px-md border-b border-white/10 flex items-center justify-between">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary">settings</span>
+<h2 class="font-headline-md text-headline-md text-on-surface">System Settings</h2>
+</div>
+<button class="p-2 hover:bg-white/10 rounded-full transition-colors text-outline">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<!-- Scrollable Content Area -->
+<div class="flex-1 overflow-y-auto px-md py-lg space-y-xl">
+<!-- Section: Model Settings -->
+<section class="space-y-md">
+<div class="flex items-center gap-sm mb-md">
+<span class="material-symbols-outlined text-secondary text-[20px]">psychology</span>
+<h3 class="font-label-md text-label-md uppercase text-outline tracking-widest">Model Settings</h3>
+</div>
+<div class="space-y-sm">
+<div class="flex justify-between items-center mb-1">
+<span class="font-body-sm text-body-sm text-on-surface">Max tokens</span>
+<span class="font-label-sm text-label-sm text-primary-fixed-dim">2,048</span>
+</div>
+<input class="custom-slider" max="4096" min="256" type="range" value="2048"/>
+</div>
+<div class="space-y-sm pt-sm">
+<div class="flex justify-between items-center mb-1">
+<span class="font-body-sm text-body-sm text-on-surface">Temperature</span>
+<span class="font-label-sm text-label-sm text-primary-fixed-dim">0.7</span>
+</div>
+<input class="custom-slider" max="1" min="0" step="0.1" type="range" value="0.7"/>
+</div>
+<div class="flex items-center justify-between pt-sm">
+<div class="space-y-0.5">
+<span class="font-body-sm text-body-sm text-on-surface">Thinking mode</span>
+<p class="font-label-sm text-label-sm text-outline">Enable detailed reasoning steps</p>
+</div>
+<div class="toggle-switch active">
+<div class="toggle-knob"></div>
+</div>
+</div>
+</section>
+<div class="h-px bg-white/5 w-full"></div>
+<!-- Section: Privacy -->
+<section class="space-y-md">
+<div class="flex items-center gap-sm mb-md">
+<span class="material-symbols-outlined text-secondary text-[20px]">shield</span>
+<h3 class="font-label-md text-label-md uppercase text-outline tracking-widest">Privacy</h3>
+</div>
+<div class="flex items-center justify-between">
+<div class="space-y-0.5">
+<span class="font-body-sm text-body-sm text-on-surface">Offline mode</span>
+<p class="font-label-sm text-label-sm text-outline">Process data locally when possible</p>
+</div>
+<div class="toggle-switch">
+<div class="toggle-knob"></div>
+</div>
+</div>
+<button class="w-full py-sm flex items-center justify-between text-error hover:bg-error-container/10 px-sm -mx-sm rounded-lg transition-colors">
+<span class="font-body-sm text-body-sm">Clear cache</span>
+<span class="material-symbols-outlined text-[18px]">delete_forever</span>
+</button>
+</section>
+<div class="h-px bg-white/5 w-full"></div>
+<!-- Section: Display -->
+<section class="space-y-md">
+<div class="flex items-center gap-sm mb-md">
+<span class="material-symbols-outlined text-secondary text-[20px]">palette</span>
+<h3 class="font-label-md text-label-md uppercase text-outline tracking-widest">Display</h3>
+</div>
+<div class="flex items-center justify-between">
+<span class="font-body-sm text-body-sm text-on-surface">Dark mode</span>
+<div class="flex bg-surface-container-high p-1 rounded-full border border-white/5">
+<button class="px-3 py-1 rounded-full bg-primary-container text-on-primary-container text-label-sm flex items-center gap-xs">
+<span class="material-symbols-outlined text-[14px]" style="font-variation-settings: 'FILL' 1;">dark_mode</span>
+              On
+            </button>
+<button class="px-3 py-1 rounded-full text-outline text-label-sm flex items-center gap-xs">
+<span class="material-symbols-outlined text-[14px]">light_mode</span>
+              Off
+            </button>
+</div>
+</div>
+<div class="space-y-sm pt-sm">
+<span class="font-body-sm text-body-sm text-on-surface">Font size</span>
+<div class="grid grid-cols-3 gap-xs">
+<button class="py-2 border border-white/10 rounded-lg text-label-sm text-outline hover:border-primary/40 transition-colors">Small</button>
+<button class="py-2 border border-primary text-primary rounded-lg text-label-sm bg-primary/5">Normal</button>
+<button class="py-2 border border-white/10 rounded-lg text-label-sm text-outline hover:border-primary/40 transition-colors">Large</button>
+</div>
+</div>
+</section>
+<div class="h-px bg-white/5 w-full"></div>
+<!-- Section: About -->
+<section class="space-y-md">
+<div class="flex items-center gap-sm mb-md">
+<span class="material-symbols-outlined text-secondary text-[20px]">info</span>
+<h3 class="font-label-md text-label-md uppercase text-outline tracking-widest">About</h3>
+</div>
+<div class="bg-white/5 rounded-xl p-md space-y-sm">
+<div class="flex justify-between">
+<span class="font-label-sm text-label-sm text-outline">System Version</span>
+<span class="font-label-sm text-label-sm text-on-surface">v4.2.0-stable</span>
+</div>
+<div class="flex justify-between">
+<span class="font-label-sm text-label-sm text-outline">Model Architecture</span>
+<span class="font-label-sm text-label-sm text-on-surface">Stratos-Gemma-4-8B</span>
+</div>
+<div class="flex justify-between">
+<span class="font-label-sm text-label-sm text-outline">Last Updated</span>
+<span class="font-label-sm text-label-sm text-on-surface">Oct 24, 2024</span>
+</div>
+</div>
+<div class="flex justify-center gap-lg pt-sm">
+<a class="font-label-sm text-label-sm text-primary hover:underline" href="#">Release Notes</a>
+<a class="font-label-sm text-label-sm text-primary hover:underline" href="#">Documentation</a>
+</div>
+</section>
+</div>
+<!-- Panel Footer Action -->
+<div class="p-md border-t border-white/10 bg-surface-container-low/40">
+<button class="w-full bg-primary-container text-on-primary-container py-3 rounded-lg font-label-md text-label-md flex items-center justify-center gap-sm hover:brightness-110 active:scale-[0.98] transition-all">
+<span class="material-symbols-outlined text-[18px]">save</span>
+        Apply Changes
+      </button>
+</div>
+</div>
+<!-- Shared Footer Component (Suppressed on focused settings view but logic kept for reference) -->
+<!-- <footer class="fixed bottom-0 left-0 right-0 bg-surface-container-lowest/20 backdrop-blur-sm text-outline border-t border-white/5 flex justify-between items-center px-lg py-sm z-30">
+    <div class="font-label-md text-label-md text-primary">Stratos Office</div>
+    <div class="font-label-sm text-label-sm">© 2024 Stratos Office. Private & Secure AI.</div>
+    <div class="flex gap-md">
+      <a href="#" class="hover:text-primary transition-colors">Privacy</a>
+      <a href="#" class="hover:text-primary transition-colors">Terms</a>
+      <a href="#" class="hover:text-primary transition-colors">API Status</a>
+    </div>
+  </footer> -->
+</body></html>

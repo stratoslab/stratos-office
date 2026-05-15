@@ -1,0 +1,161 @@
+import { useState, useCallback } from 'react';
+import { TaskType } from '../../types';
+import { useTask } from '../../context/TaskContext';
+import { getTaskConfig } from '../../taskRouter';
+import { estimateTokens, extractPDFText } from '../../fileHandler';
+import FileUploadZone from '../ui/FileUploadZone';
+import AudioRecorderWidget from '../ui/AudioRecorderWidget';
+import WebcamCaptureComponent from '../ui/WebcamCapture';
+import ThinkingModeToggle from '../ui/ThinkingModeToggle';
+import PDFPageRangeSelector from '../ui/PDFPageRangeSelector';
+import TokenEstimateDisplay from '../ui/TokenEstimateDisplay';
+import ContextLimitWarning from '../ui/ContextLimitWarning';
+import PrivacyNotice from '../ui/PrivacyNotice';
+import { loadSettings } from '../../settingsStore';
+
+interface InputPanelProps {
+  taskType: TaskType;
+}
+
+export default function InputPanel({ taskType }: InputPanelProps) {
+  const config = getTaskConfig(taskType);
+  const { taskInput, setInput, submitTask, lifecycle, enableThinking, setEnableThinking } = useTask();
+  const [error, setError] = useState<string | null>(null);
+  const [pdfPageCount, setPdfPageCount] = useState<number>(0);
+  const [pdfRange, setPdfRange] = useState<{ start: number; end: number }>({ start: 1, end: 50 });
+  const [pdfTokenEstimate, setPdfTokenEstimate] = useState(0);
+
+  const handleFile = useCallback(async (file: File, dataUrl: string) => {
+    setInput({ file, imageDataUrl: dataUrl });
+    setError(null);
+
+    if (config.requiresPDF) {
+      try {
+        const result = await extractPDFText(file);
+        setPdfPageCount(result.pageCount);
+        const tokens = estimateTokens(result.text);
+        setPdfTokenEstimate(tokens);
+        if (result.pageCount <= 50) {
+          setInput({ pdfText: result.text });
+        }
+      } catch {
+        setError('Failed to extract PDF text');
+      }
+    }
+  }, [config.requiresPDF, setInput]);
+
+  const handleAudio = useCallback((pcm: Float32Array) => {
+    setInput({ audioData: pcm });
+    setError(null);
+  }, [setInput]);
+
+  const handleFrame = useCallback((dataUrl: string) => {
+    setInput({ imageDataUrl: dataUrl });
+    setError(null);
+  }, [setInput]);
+
+  const handlePdfRange = useCallback((range: { start: number; end: number }) => {
+    setPdfRange(range);
+    if (taskInput.pdfText) {
+      const tokens = estimateTokens(taskInput.pdfText);
+      setPdfTokenEstimate(tokens);
+    }
+  }, [taskInput.pdfText]);
+
+  const handleTextChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInput({ text: e.target.value });
+  }, [setInput]);
+
+  const handleSubmit = useCallback(() => {
+    if (config.requiresPDF && taskInput.file && pdfPageCount > 50) {
+      extractPDFText(taskInput.file, pdfRange).then(result => {
+        setInput({ pdfText: result.text });
+        setTimeout(() => submitTask(), 100);
+      });
+    } else {
+      submitTask();
+    }
+  }, [config.requiresPDF, taskInput.file, pdfPageCount, pdfRange, setInput, submitTask]);
+
+  const isDisabled = lifecycle === 'generating' || lifecycle === 'submitting';
+  const settings = loadSettings();
+  const isResearchOffline = settings.offlineMode && taskType === 'research';
+
+  const isSubmitDisabled = isDisabled || isResearchOffline ||
+    (config.requiresImage && !taskInput.imageDataUrl) ||
+    (config.requiresAudio && !taskInput.audioData) ||
+    (config.requiresText && !taskInput.text) ||
+    (config.requiresPDF && !taskInput.pdfText && !taskInput.file);
+
+  return (
+    <div className="bg-[#0A2540]/50 rounded-xl p-6 space-y-4">
+      <h3 className="text-sm font-medium text-gray-400">Input</h3>
+
+      {error && (
+        <div className="bg-red-900/20 border border-red-500/30 rounded-lg px-3 py-2 text-red-400 text-sm" role="alert">
+          {error}
+        </div>
+      )}
+
+      {config.requiresImage && (
+        <FileUploadZone taskType={taskType} onFile={handleFile} onError={setError} preview={taskInput.imageDataUrl} />
+      )}
+
+      {config.requiresAudio && (
+        <div className="space-y-3">
+          <FileUploadZone taskType={taskType} onFile={handleFile} onError={setError} />
+          <AudioRecorderWidget onAudio={handleAudio} onError={setError} />
+        </div>
+      )}
+
+      {config.requiresPDF && (
+        <div className="space-y-3">
+          <FileUploadZone taskType={taskType} onFile={handleFile} onError={setError} />
+          {pdfPageCount > 50 && (
+            <PDFPageRangeSelector pageCount={pdfPageCount} onChange={handlePdfRange} tokenEstimate={pdfTokenEstimate} />
+          )}
+          {pdfTokenEstimate > 0 && pdfPageCount <= 50 && (
+            <TokenEstimateDisplay tokenCount={pdfTokenEstimate} />
+          )}
+          <ContextLimitWarning tokenCount={pdfTokenEstimate} pageCount={pdfPageCount} />
+        </div>
+      )}
+
+      {config.requiresText && !config.requiresPDF && (
+        <textarea
+          value={taskInput.text ?? ''}
+          onChange={handleTextChange}
+          placeholder="Enter your text here..."
+          className="w-full min-h-[120px] bg-white/5 border border-white/20 rounded-xl p-4 text-sm text-white placeholder-gray-500 focus:border-[#00D4FF] focus:outline-none resize-y"
+          aria-label="Task input"
+        />
+      )}
+
+      {config.supportsWebcam && (
+        <WebcamCaptureComponent onFrame={handleFrame} onError={setError} />
+      )}
+
+      {config.supportsThinkingMode && (
+        <ThinkingModeToggle enabled={enableThinking} onChange={setEnableThinking} />
+      )}
+
+      {config.requiresPrivacyNotice && (
+        <PrivacyNotice taskType={taskType} />
+      )}
+
+      <button
+        onClick={handleSubmit}
+        disabled={isSubmitDisabled}
+        className={`w-full py-3 rounded-xl font-medium transition-colors ${
+          isSubmitDisabled
+            ? 'bg-white/5 text-gray-500 cursor-not-allowed'
+            : 'bg-[#00D4FF] text-[#061220] hover:brightness-110'
+        }`}
+        aria-label="Run task"
+        title={isResearchOffline ? 'Web research requires Offline Mode to be disabled' : undefined}
+      >
+        {lifecycle === 'generating' ? 'Running...' : 'Run Task'}
+      </button>
+    </div>
+  );
+}

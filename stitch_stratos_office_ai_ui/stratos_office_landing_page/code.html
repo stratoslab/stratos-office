@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Stratos Office | High-Performance AI</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: radial-gradient(circle at top right, #04203b 0%, #00142a 100%);
+            overflow-x: hidden;
+        }
+        .glass-panel {
+            background: rgba(10, 37, 64, 0.4);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .ai-shimmer {
+            background: linear-gradient(90deg, #00d4ff 0%, #00e5cc 50%, #00d4ff 100%);
+            background-size: 200% auto;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-container": "#04203b",
+                      "primary-fixed-dim": "#3cd7ff",
+                      "on-secondary-fixed-variant": "#005047",
+                      "tertiary-container": "#feb528",
+                      "error-container": "#93000a",
+                      "error": "#ffb4ab",
+                      "primary-container": "#00d4ff",
+                      "secondary-container": "#00e5cc",
+                      "background": "#00142a",
+                      "surface-variant": "#1e3652",
+                      "on-primary-fixed-variant": "#004e5f",
+                      "outline": "#859398",
+                      "primary": "#a8e8ff",
+                      "surface-tint": "#3cd7ff",
+                      "on-tertiary-fixed-variant": "#604100",
+                      "on-tertiary": "#432c00",
+                      "surface-container-high": "#122b46",
+                      "secondary": "#6fffe8",
+                      "surface-bright": "#233a56",
+                      "tertiary-fixed-dim": "#ffba3d",
+                      "on-background": "#d2e4ff",
+                      "surface-container-lowest": "#000f21",
+                      "surface-container-low": "#001c37",
+                      "on-secondary": "#003730",
+                      "secondary-fixed": "#41fce2",
+                      "on-error-container": "#ffdad6",
+                      "tertiary-fixed": "#ffdeae",
+                      "surface-dim": "#00142a",
+                      "on-primary-container": "#00586b",
+                      "on-surface": "#d2e4ff",
+                      "on-secondary-fixed": "#00201b",
+                      "inverse-primary": "#00677e",
+                      "primary-fixed": "#b4ebff",
+                      "on-secondary-container": "#006156",
+                      "surface-container-highest": "#1e3652",
+                      "on-primary": "#003642",
+                      "secondary-fixed-dim": "#00dfc6",
+                      "inverse-surface": "#d2e4ff",
+                      "outline-variant": "#3c494e",
+                      "on-tertiary-container": "#6c4900",
+                      "on-primary-fixed": "#001f27",
+                      "on-error": "#690005",
+                      "surface": "#00142a",
+                      "on-tertiary-fixed": "#281900",
+                      "inverse-on-surface": "#19324d",
+                      "tertiary": "#ffd9a1",
+                      "on-surface-variant": "#bbc9cf"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "xl": "64px",
+                      "margin-mobile": "16px",
+                      "lg": "40px",
+                      "margin-desktop": "48px",
+                      "xs": "4px",
+                      "sm": "12px",
+                      "base": "8px",
+                      "gutter": "24px",
+                      "md": "24px"
+              },
+              "fontFamily": {
+                      "body-lg": ["Outfit"],
+                      "body-sm": ["Outfit"],
+                      "label-md": ["Outfit"],
+                      "label-sm": ["Outfit"],
+                      "headline-xl": ["Outfit"],
+                      "headline-lg": ["Outfit"],
+                      "body-md": ["Outfit"],
+                      "headline-md": ["Outfit"],
+                      "headline-lg-mobile": ["Outfit"]
+              },
+              "fontSize": {
+                      "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                      "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                      "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                      "label-sm": ["11px", {"lineHeight": "14px", "fontWeight": "500"}],
+                      "headline-xl": ["40px", {"lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                      "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                      "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                      "headline-lg-mobile": ["28px", {"lineHeight": "36px", "fontWeight": "600"}]
+              }
+            },
+          },
+        }
+      </script>
+</head>
+<body class="bg-background text-on-background min-h-screen flex flex-col">
+<!-- TopAppBar -->
+<header class="bg-surface/40 backdrop-blur-md text-primary-fixed-dim docked full-width top-0 border-b border-white/10 shadow-sm bg-opacity-40 flex justify-between items-center w-full px-md h-16 fixed z-50">
+<div class="flex items-center gap-sm">
+<span class="font-headline-md text-headline-md font-bold text-primary">Stratos Office</span>
+</div>
+<div class="flex items-center gap-md">
+<div class="hidden md:flex items-center gap-gutter">
+<a class="text-primary-fixed-dim font-bold font-label-md text-label-md" href="#">Home</a>
+<a class="text-on-surface-variant hover:bg-white/5 transition-colors px-xs py-xs rounded font-label-md text-label-md" href="#">Documentation</a>
+<a class="text-on-surface-variant hover:bg-white/5 transition-colors px-xs py-xs rounded font-label-md text-label-md" href="#">Security</a>
+</div>
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined hover:bg-white/5 transition-colors p-base cursor-pointer">settings</span>
+<span class="material-symbols-outlined hover:bg-white/5 transition-colors p-base cursor-pointer">notifications</span>
+<span class="material-symbols-outlined hover:bg-white/5 transition-colors p-base cursor-pointer">account_circle</span>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-grow flex items-center justify-center pt-16 px-margin-mobile md:px-margin-desktop relative">
+<!-- Abstract Background Elements -->
+<div class="absolute top-1/4 left-1/4 w-96 h-96 bg-primary-container/10 rounded-full blur-[120px] pointer-events-none"></div>
+<div class="absolute bottom-1/4 right-1/4 w-96 h-96 bg-secondary-container/10 rounded-full blur-[120px] pointer-events-none"></div>
+<!-- Glassmorphism Panel -->
+<div class="glass-panel w-full max-w-4xl p-lg md:p-xl rounded-xl text-center flex flex-col items-center z-10">
+<!-- Brand Logo Placeholder -->
+<div class="mb-lg">
+<div class="w-16 h-16 bg-white/10 rounded-xl flex items-center justify-center border border-white/20 mb-md mx-auto">
+<span class="material-symbols-outlined text-primary text-4xl">dynamic_feed</span>
+</div>
+<h1 class="font-headline-xl text-headline-xl text-on-surface mb-xs tracking-tight">Stratos Office</h1>
+<p class="font-headline-md text-headline-md text-primary-fixed-dim">AI Office Assistant — Private, local AI for your daily work</p>
+</div>
+<!-- Bento Grid of Features -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-md w-full mb-xl">
+<div class="glass-panel p-md rounded-lg border border-white/5 text-left">
+<span class="material-symbols-outlined text-secondary mb-base">document_scanner</span>
+<h3 class="font-label-md text-label-md text-on-surface mb-xs">Advanced OCR</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Instant, privacy-first optical character recognition for any document format.</p>
+</div>
+<div class="glass-panel p-md rounded-lg border border-white/5 text-left">
+<span class="material-symbols-outlined text-secondary mb-base">audio_file</span>
+<h3 class="font-label-md text-label-md text-on-surface mb-xs">Live Transcription</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Convert meetings and voice notes to text using local neural processing.</p>
+</div>
+<div class="glass-panel p-md rounded-lg border border-white/5 text-left">
+<span class="material-symbols-outlined text-secondary mb-base">neurology</span>
+<h3 class="font-label-md text-label-md text-on-surface mb-xs">Gemma 4 Engine</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">High-performance LLM capabilities without ever sending data to a cloud server.</p>
+</div>
+</div>
+<!-- Primary CTA -->
+<div class="flex flex-col items-center gap-md w-full">
+<button class="bg-[#00D4FF] hover:brightness-110 text-on-background px-xl py-md rounded-lg font-headline-md text-headline-md font-bold transition-all transform active:scale-95 duration-100 flex items-center gap-sm">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">bolt</span>
+                    Load Gemma 4
+                </button>
+<!-- Secondary Info -->
+<div class="flex flex-col gap-xs items-center max-w-lg">
+<p class="font-body-md text-body-md text-on-surface-variant">
+                        Powered by <span class="text-secondary-fixed-dim">Transformers.js</span>. Local execution ensures 100% privacy.
+                    </p>
+<div class="flex items-center gap-sm mt-xs">
+<span class="px-sm py-xs bg-primary-container/10 text-primary-fixed-dim text-label-sm font-label-sm rounded-full border border-primary/20">WebGPU Required</span>
+<span class="px-sm py-xs bg-primary-container/10 text-primary-fixed-dim text-label-sm font-label-sm rounded-full border border-primary/20">4GB+ RAM Recommended</span>
+</div>
+</div>
+</div>
+<!-- Bottom Shield Icon -->
+<div class="mt-xl pt-lg border-t border-white/5 w-full flex justify-center">
+<div class="flex items-center gap-base opacity-60">
+<span class="material-symbols-outlined text-secondary" style="font-variation-settings: 'FILL' 1;">verified_user</span>
+<span class="font-label-md text-label-md text-on-surface-variant uppercase tracking-widest">End-to-End Local Privacy</span>
+</div>
+</div>
+</div>
+</main>
+<!-- Footer -->
+<footer class="bg-surface-container-lowest/20 backdrop-blur-sm text-outline border-t border-white/5 flex justify-between items-center px-lg py-sm relative z-20">
+<div class="flex items-center gap-sm">
+<span class="font-label-md text-label-md text-primary font-bold">Stratos Office</span>
+<span class="font-label-sm text-label-sm">© 2024 Stratos Office. Private &amp; Secure AI.</span>
+</div>
+<div class="flex items-center gap-md">
+<a class="text-outline hover:text-primary font-label-sm text-label-sm transition-colors opacity-80 hover:opacity-100" href="#">Privacy</a>
+<a class="text-outline hover:text-primary font-label-sm text-label-sm transition-colors opacity-80 hover:opacity-100" href="#">Terms</a>
+<a class="text-outline hover:text-primary font-label-sm text-label-sm transition-colors opacity-80 hover:opacity-100" href="#">API Status</a>
+</div>
+</footer>
+</body></html>

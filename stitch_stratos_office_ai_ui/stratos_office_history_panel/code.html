@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Stratos Office - Task History</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-panel {
+            background: rgba(10, 37, 64, 0.4);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .ai-pulse {
+            box-shadow: 0 0 15px rgba(0, 229, 204, 0.2);
+        }
+    </style>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "surface-container": "#04203b",
+                      "primary-fixed-dim": "#3cd7ff",
+                      "on-secondary-fixed-variant": "#005047",
+                      "tertiary-container": "#feb528",
+                      "error-container": "#93000a",
+                      "error": "#ffb4ab",
+                      "primary-container": "#00d4ff",
+                      "secondary-container": "#00e5cc",
+                      "background": "#00142a",
+                      "surface-variant": "#1e3652",
+                      "on-primary-fixed-variant": "#004e5f",
+                      "outline": "#859398",
+                      "primary": "#a8e8ff",
+                      "surface-tint": "#3cd7ff",
+                      "on-tertiary-fixed-variant": "#604100",
+                      "on-tertiary": "#432c00",
+                      "surface-container-high": "#122b46",
+                      "secondary": "#6fffe8",
+                      "surface-bright": "#233a56",
+                      "tertiary-fixed-dim": "#ffba3d",
+                      "on-background": "#d2e4ff",
+                      "surface-container-lowest": "#000f21",
+                      "surface-container-low": "#001c37",
+                      "on-secondary": "#003730",
+                      "secondary-fixed": "#41fce2",
+                      "on-error-container": "#ffdad6",
+                      "tertiary-fixed": "#ffdeae",
+                      "surface-dim": "#00142a",
+                      "on-primary-container": "#00586b",
+                      "on-surface": "#d2e4ff",
+                      "on-secondary-fixed": "#00201b",
+                      "inverse-primary": "#00677e",
+                      "primary-fixed": "#b4ebff",
+                      "on-secondary-container": "#006156",
+                      "surface-container-highest": "#1e3652",
+                      "on-primary": "#003642",
+                      "secondary-fixed-dim": "#00dfc6",
+                      "inverse-surface": "#d2e4ff",
+                      "outline-variant": "#3c494e",
+                      "on-tertiary-container": "#6c4900",
+                      "on-primary-fixed": "#001f27",
+                      "on-error": "#690005",
+                      "surface": "#00142a",
+                      "on-tertiary-fixed": "#281900",
+                      "inverse-on-surface": "#19324d",
+                      "tertiary": "#ffd9a1",
+                      "on-surface-variant": "#bbc9cf"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.25rem",
+                      "lg": "0.5rem",
+                      "xl": "0.75rem",
+                      "full": "9999px"
+              },
+              "spacing": {
+                      "xl": "64px",
+                      "margin-mobile": "16px",
+                      "lg": "40px",
+                      "margin-desktop": "48px",
+                      "xs": "4px",
+                      "sm": "12px",
+                      "base": "8px",
+                      "gutter": "24px",
+                      "md": "24px"
+              },
+              "fontFamily": {
+                      "body-lg": ["Outfit"],
+                      "body-sm": ["Outfit"],
+                      "label-md": ["Outfit"],
+                      "label-sm": ["Outfit"],
+                      "headline-xl": ["Outfit"],
+                      "headline-lg": ["Outfit"],
+                      "body-md": ["Outfit"],
+                      "headline-md": ["Outfit"],
+                      "headline-lg-mobile": ["Outfit"]
+              },
+              "fontSize": {
+                      "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                      "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                      "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                      "label-sm": ["11px", {"lineHeight": "14px", "fontWeight": "500"}],
+                      "headline-xl": ["40px", {"lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                      "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                      "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                      "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                      "headline-lg-mobile": ["28px", {"lineHeight": "36px", "fontWeight": "600"}]
+              }
+            },
+          },
+        }
+      </script>
+</head>
+<body class="bg-background text-on-background font-body-md min-h-screen overflow-hidden">
+<!-- TopAppBar -->
+<header class="fixed top-0 z-40 bg-surface/40 backdrop-blur-md text-primary-fixed-dim border-b border-white/10 flex justify-between items-center w-full px-md h-16 shadow-sm bg-opacity-40">
+<div class="flex items-center gap-base">
+<span class="font-headline-md text-headline-md font-bold text-primary">Stratos Office</span>
+</div>
+<div class="flex items-center gap-md">
+<div class="hidden md:flex items-center bg-surface-variant/30 rounded-full px-md py-xs border border-white/5">
+<span class="material-symbols-outlined text-outline text-body-md mr-xs">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-body-sm text-on-surface-variant w-48" placeholder="Global Search..." type="text"/>
+</div>
+<div class="flex items-center gap-sm">
+<button class="p-xs hover:bg-white/5 transition-colors rounded-full active:scale-95 duration-100">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<button class="p-xs hover:bg-white/5 transition-colors rounded-full active:scale-95 duration-100 relative">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-1 right-1 w-2 h-2 bg-secondary-container rounded-full"></span>
+</button>
+<button class="flex items-center gap-xs hover:bg-white/5 transition-colors p-xs rounded-full active:scale-95 duration-100">
+<span class="material-symbols-outlined">account_circle</span>
+</button>
+</div>
+</div>
+</header>
+<div class="flex h-screen pt-16">
+<!-- SideNavBar -->
+<aside class="hidden md:flex flex-col h-full py-md bg-surface-container/40 backdrop-blur-xl text-primary border-r border-white/10 w-64">
+<div class="px-md mb-xl flex flex-col gap-xs">
+<div class="flex items-center gap-sm">
+<div class="w-10 h-10 bg-primary-container rounded-lg flex items-center justify-center">
+<span class="material-symbols-outlined text-on-primary-container">rocket_launch</span>
+</div>
+<div>
+<div class="font-headline-md text-headline-md text-primary-container leading-none">Stratos</div>
+<div class="font-label-md text-label-md text-outline">Gemma 4 Active</div>
+</div>
+</div>
+<button class="mt-lg w-full py-sm bg-primary-container text-on-primary-container font-label-md rounded-xl hover:brightness-110 transition-all flex items-center justify-center gap-base">
+<span class="material-symbols-outlined text-body-md">add</span>
+                    New Analysis
+                </button>
+</div>
+<nav class="flex-1 px-sm space-y-xs">
+<a class="flex items-center gap-md px-md py-sm rounded-xl text-on-surface-variant hover:bg-white/5 transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined">description</span>
+<span class="font-label-md text-label-md">Documents</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm rounded-xl text-on-surface-variant hover:bg-white/5 transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined">image</span>
+<span class="font-label-md text-label-md">Visual</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm rounded-xl text-on-surface-variant hover:bg-white/5 transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined">mic</span>
+<span class="font-label-md text-label-md">Audio</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm rounded-xl text-on-surface-variant hover:bg-white/5 transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined">edit_note</span>
+<span class="font-label-md text-label-md">Text</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm rounded-xl text-on-surface-variant hover:bg-white/5 transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined">biotech</span>
+<span class="font-label-md text-label-md">Research</span>
+</a>
+</nav>
+<div class="px-sm pt-md border-t border-white/5 space-y-xs">
+<a class="flex items-center gap-md px-md py-sm rounded-xl bg-primary-container/10 text-primary-fixed-dim border-r-2 border-primary-fixed-dim transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined">history</span>
+<span class="font-label-md text-label-md">History</span>
+</a>
+<a class="flex items-center gap-md px-md py-sm rounded-xl text-on-surface-variant hover:bg-white/5 transition-all duration-200 ease-in-out" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-md text-label-md">Settings</span>
+</a>
+</div>
+</aside>
+<!-- Main Content (Dashboard Simulation) -->
+<main class="flex-1 relative overflow-hidden bg-background p-lg">
+<div class="max-w-6xl mx-auto">
+<div class="flex flex-col gap-lg">
+<div class="flex justify-between items-end">
+<div>
+<h1 class="font-headline-xl text-headline-xl text-on-background">System Overview</h1>
+<p class="font-body-lg text-body-lg text-outline">Real-time AI operational throughput</p>
+</div>
+<div class="flex gap-base">
+<span class="bg-secondary-container/10 text-secondary-container px-md py-xs rounded-full border border-secondary-container/20 font-label-md">Operational</span>
+</div>
+</div>
+<!-- Bento Grid Dashboard -->
+<div class="grid grid-cols-12 gap-gutter">
+<div class="col-span-8 glass-panel rounded-xl p-md h-64 flex flex-col justify-between">
+<div class="flex justify-between">
+<span class="font-label-md text-label-md text-primary">Active Analysis Queue</span>
+<span class="material-symbols-outlined text-outline">more_horiz</span>
+</div>
+<div class="flex items-center gap-lg">
+<div class="w-1/3 h-24 bg-primary/5 rounded-lg border border-primary/10 flex items-center justify-center">
+<div class="text-center">
+<div class="font-headline-lg text-headline-lg text-primary">12</div>
+<div class="font-label-sm text-label-sm text-outline">PENDING</div>
+</div>
+</div>
+<div class="w-2/3 space-y-sm">
+<div class="h-2 w-full bg-white/5 rounded-full overflow-hidden">
+<div class="h-full bg-primary-container w-[65%]"></div>
+</div>
+<div class="flex justify-between font-label-sm text-label-sm text-outline">
+<span>Optimizing NLP Model</span>
+<span>65% complete</span>
+</div>
+</div>
+</div>
+</div>
+<div class="col-span-4 glass-panel rounded-xl p-md h-64 overflow-hidden relative">
+<img class="absolute inset-0 w-full h-full object-cover opacity-40 mix-blend-overlay" data-alt="A high-tech digital visualization of a neural network with glowing nodes and cyan connection lines floating in a dark, atmospheric void. The aesthetic is clean and corporate, featuring sharp details and a sense of deep focus. Subtle light glints off the connecting fibers, suggesting data movement in a secure AI environment." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB5ocfDB9lPDwANmGw8UqoWPjPA_7fGuhJpi9_Ub4FXHv47aVE9Y1u2OPyQEZ-HI367eUCB5JiOCRvjHN3RgZA6E82XRYIWErsviD6AZfdx4digDOoLh7twqTg8aY2VwUCrW6kgPCxSUo3hl84DNs0FjO8bKR7QZlOE1i5aifNv-8yTdqXMKvlK2nFUbGQXm5lFKM8937VK2LUGoAu58zJ2TOJ5YHhjqJGSP8ZQeLjSnpHyi8tt0U7L-B7Bxa5P0lma-JqjR4oryLqI"/>
+<div class="relative z-10 flex flex-col h-full justify-between">
+<span class="font-label-md text-label-md text-secondary">Network Status</span>
+<div class="font-headline-md text-headline-md text-white">Edge Node: 04-B<br/><span class="text-secondary">Connected</span></div>
+</div>
+</div>
+<div class="col-span-4 glass-panel rounded-xl p-md h-48">
+<div class="font-label-md text-label-md text-outline mb-sm">Memory Efficiency</div>
+<div class="text-headline-lg font-headline-lg text-on-surface">94.2%</div>
+<div class="mt-base flex items-center gap-xs text-secondary font-label-sm">
+<span class="material-symbols-outlined text-sm">trending_up</span>
+                                2.1% from last hour
+                            </div>
+</div>
+<div class="col-span-4 glass-panel rounded-xl p-md h-48">
+<div class="font-label-md text-label-md text-outline mb-sm">API Latency</div>
+<div class="text-headline-lg font-headline-lg text-on-surface">12ms</div>
+<div class="mt-base flex items-center gap-xs text-on-error font-label-sm bg-error/20 px-sm py-xs rounded-full w-fit">
+<span class="material-symbols-outlined text-sm">warning</span>
+                                Peak usage
+                            </div>
+</div>
+<div class="col-span-4 glass-panel rounded-xl p-md h-48">
+<div class="font-label-md text-label-md text-outline mb-sm">Active Agents</div>
+<div class="text-headline-lg font-headline-lg text-on-surface">08</div>
+<div class="mt-base flex -space-x-base">
+<div class="w-8 h-8 rounded-full border-2 border-background bg-primary-container/20"></div>
+<div class="w-8 h-8 rounded-full border-2 border-background bg-secondary-container/20"></div>
+<div class="w-8 h-8 rounded-full border-2 border-background bg-primary/20"></div>
+<div class="w-8 h-8 rounded-full border-2 border-background bg-surface-variant flex items-center justify-center text-label-sm text-outline">+5</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- TASK HISTORY PANEL (Slide-in) -->
+<div class="fixed inset-y-0 right-0 w-[360px] z-50 bg-surface-container/60 backdrop-blur-2xl border-l border-white/10 shadow-2xl flex flex-col">
+<!-- Header -->
+<div class="h-16 flex items-center justify-between px-md border-b border-white/10 shrink-0">
+<h2 class="font-headline-md text-headline-md text-on-background">Task History</h2>
+<button class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-white/10 transition-colors">
+<span class="material-symbols-outlined text-outline">close</span>
+</button>
+</div>
+<!-- Search bar area -->
+<div class="p-md shrink-0">
+<div class="relative group">
+<span class="material-symbols-outlined absolute left-sm top-1/2 -translate-y-1/2 text-outline text-body-md group-focus-within:text-primary transition-colors">search</span>
+<input class="w-full bg-white/5 border border-white/10 rounded-xl py-sm pl-xl pr-md font-body-sm text-on-background focus:ring-1 focus:ring-primary focus:border-primary placeholder:text-outline/50 transition-all outline-none" placeholder="Search tasks..." type="text"/>
+</div>
+</div>
+<!-- History List -->
+<div class="flex-1 overflow-y-auto px-md space-y-sm py-base">
+<!-- Task Item 1 -->
+<div class="glass-panel p-sm rounded-xl border-white/5 hover:border-primary/20 transition-all cursor-pointer group">
+<div class="flex gap-sm">
+<div class="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined">description</span>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-start">
+<span class="font-label-md text-label-md text-on-surface">Document OCR</span>
+<span class="font-label-sm text-label-sm text-outline">2 min ago</span>
+</div>
+<div class="flex items-center gap-xs mt-xs">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary-container ai-pulse"></span>
+<span class="font-label-sm text-label-sm text-secondary-container">Success</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Task Item 2 -->
+<div class="glass-panel p-sm rounded-xl border-white/5 hover:border-primary/20 transition-all cursor-pointer group">
+<div class="flex gap-sm">
+<div class="w-10 h-10 rounded-lg bg-secondary/10 flex items-center justify-center text-secondary group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined">image</span>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-start">
+<span class="font-label-md text-label-md text-on-surface">Visual Synthesis</span>
+<span class="font-label-sm text-label-sm text-outline">15 min ago</span>
+</div>
+<div class="flex items-center gap-xs mt-xs">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary-container ai-pulse"></span>
+<span class="font-label-sm text-label-sm text-secondary-container">Success</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Task Item 3 (In Progress) -->
+<div class="glass-panel p-sm rounded-xl border-white/5 bg-primary/5">
+<div class="flex gap-sm">
+<div class="w-10 h-10 rounded-lg bg-primary-container/20 flex items-center justify-center text-primary-container animate-pulse">
+<span class="material-symbols-outlined">analytics</span>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-start">
+<span class="font-label-md text-label-md text-on-surface">Data Clustering</span>
+<span class="font-label-sm text-label-sm text-outline">Now</span>
+</div>
+<div class="flex items-center gap-xs mt-xs">
+<span class="w-1.5 h-1.5 rounded-full bg-primary-container animate-pulse"></span>
+<span class="font-label-sm text-label-sm text-primary-container">In Progress</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Task Item 4 -->
+<div class="glass-panel p-sm rounded-xl border-white/5 hover:border-primary/20 transition-all cursor-pointer group">
+<div class="flex gap-sm">
+<div class="w-10 h-10 rounded-lg bg-tertiary-container/10 flex items-center justify-center text-tertiary-container group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined">edit_note</span>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-start">
+<span class="font-label-md text-label-md text-on-surface">Audit Summary</span>
+<span class="font-label-sm text-label-sm text-outline">1h ago</span>
+</div>
+<div class="flex items-center gap-xs mt-xs">
+<span class="w-1.5 h-1.5 rounded-full bg-secondary-container"></span>
+<span class="font-label-sm text-label-sm text-secondary-container">Success</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Task Item 5 (Failed) -->
+<div class="glass-panel p-sm rounded-xl border-white/5 hover:border-error/20 transition-all cursor-pointer group">
+<div class="flex gap-sm">
+<div class="w-10 h-10 rounded-lg bg-error/10 flex items-center justify-center text-error group-hover:scale-110 transition-transform">
+<span class="material-symbols-outlined">sync_problem</span>
+</div>
+<div class="flex-1">
+<div class="flex justify-between items-start">
+<span class="font-label-md text-label-md text-on-surface">Batch Import</span>
+<span class="font-label-sm text-label-sm text-outline">2h ago</span>
+</div>
+<div class="flex items-center gap-xs mt-xs">
+<span class="w-1.5 h-1.5 rounded-full bg-error"></span>
+<span class="font-label-sm text-label-sm text-error">Failed</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Footer Action -->
+<div class="p-md border-t border-white/10 bg-surface-container-lowest/20 backdrop-blur-sm">
+<button class="w-full py-sm bg-error-container text-on-error-container font-label-md rounded-xl hover:brightness-125 transition-all flex items-center justify-center gap-base active:scale-[0.98]">
+<span class="material-symbols-outlined text-body-md">delete_sweep</span>
+                        Clear All History
+                    </button>
+</div>
+</div>
+</main>
+</div>
+<!-- Footer Navigation (Bottom Nav for Mobile) -->
+<footer class="md:hidden fixed bottom-0 left-0 right-0 bg-surface-container-lowest/20 backdrop-blur-sm border-t border-white/5 h-16 flex justify-between items-center px-lg py-sm z-40">
+<a class="flex flex-col items-center gap-xs text-outline hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="font-label-sm text-label-sm">Home</span>
+</a>
+<a class="flex flex-col items-center gap-xs text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">history</span>
+<span class="font-label-sm text-label-sm">History</span>
+</a>
+<a class="flex flex-col items-center gap-xs text-outline hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-sm text-label-sm">Settings</span>
+</a>
+</footer>
+</body></html>

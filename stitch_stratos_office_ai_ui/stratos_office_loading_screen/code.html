@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Stratos Office | Loading</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            "colors": {
+                    "surface-container": "#04203b",
+                    "primary-fixed-dim": "#3cd7ff",
+                    "on-secondary-fixed-variant": "#005047",
+                    "tertiary-container": "#feb528",
+                    "error-container": "#93000a",
+                    "error": "#ffb4ab",
+                    "primary-container": "#00d4ff",
+                    "secondary-container": "#00e5cc",
+                    "background": "#00142a",
+                    "surface-variant": "#1e3652",
+                    "on-primary-fixed-variant": "#004e5f",
+                    "outline": "#859398",
+                    "primary": "#a8e8ff",
+                    "surface-tint": "#3cd7ff",
+                    "on-tertiary-fixed-variant": "#604100",
+                    "on-tertiary": "#432c00",
+                    "surface-container-high": "#122b46",
+                    "secondary": "#6fffe8",
+                    "surface-bright": "#233a56",
+                    "tertiary-fixed-dim": "#ffba3d",
+                    "on-background": "#d2e4ff",
+                    "surface-container-lowest": "#000f21",
+                    "surface-container-low": "#001c37",
+                    "on-secondary": "#003730",
+                    "secondary-fixed": "#41fce2",
+                    "on-error-container": "#ffdad6",
+                    "tertiary-fixed": "#ffdeae",
+                    "surface-dim": "#00142a",
+                    "on-primary-container": "#00586b",
+                    "on-surface": "#d2e4ff",
+                    "on-secondary-fixed": "#00201b",
+                    "inverse-primary": "#00677e",
+                    "primary-fixed": "#b4ebff",
+                    "on-secondary-container": "#006156",
+                    "surface-container-highest": "#1e3652",
+                    "on-primary": "#003642",
+                    "secondary-fixed-dim": "#00dfc6",
+                    "inverse-surface": "#d2e4ff",
+                    "outline-variant": "#3c494e",
+                    "on-tertiary-container": "#6c4900",
+                    "on-primary-fixed": "#001f27",
+                    "on-error": "#690005",
+                    "surface": "#00142a",
+                    "on-tertiary-fixed": "#281900",
+                    "inverse-on-surface": "#19324d",
+                    "tertiary": "#ffd9a1",
+                    "on-surface-variant": "#bbc9cf"
+            },
+            "borderRadius": {
+                    "DEFAULT": "0.25rem",
+                    "lg": "0.5rem",
+                    "xl": "0.75rem",
+                    "full": "9999px"
+            },
+            "spacing": {
+                    "xl": "64px",
+                    "margin-mobile": "16px",
+                    "lg": "40px",
+                    "margin-desktop": "48px",
+                    "xs": "4px",
+                    "sm": "12px",
+                    "base": "8px",
+                    "gutter": "24px",
+                    "md": "24px"
+            },
+            "fontFamily": {
+                    "body-lg": ["Outfit"],
+                    "body-sm": ["Outfit"],
+                    "label-md": ["Outfit"],
+                    "label-sm": ["Outfit"],
+                    "headline-xl": ["Outfit"],
+                    "headline-lg": ["Outfit"],
+                    "body-md": ["Outfit"],
+                    "headline-md": ["Outfit"],
+                    "headline-lg-mobile": ["Outfit"]
+            },
+            "fontSize": {
+                    "body-lg": ["18px", {"lineHeight": "28px", "fontWeight": "400"}],
+                    "body-sm": ["14px", {"lineHeight": "20px", "fontWeight": "400"}],
+                    "label-md": ["12px", {"lineHeight": "16px", "letterSpacing": "0.05em", "fontWeight": "600"}],
+                    "label-sm": ["11px", {"lineHeight": "14px", "fontWeight": "500"}],
+                    "headline-xl": ["40px", {"lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+                    "headline-lg": ["32px", {"lineHeight": "40px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+                    "body-md": ["16px", {"lineHeight": "24px", "fontWeight": "400"}],
+                    "headline-md": ["24px", {"lineHeight": "32px", "fontWeight": "600"}],
+                    "headline-lg-mobile": ["28px", {"lineHeight": "36px", "fontWeight": "600"}]
+            }
+          },
+        },
+      }
+    </script>
+<style>
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: #00142a;
+            color: #d2e4ff;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-panel {
+            background: rgba(10, 37, 64, 0.4);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .shimmer {
+            background: linear-gradient(90deg, transparent, rgba(0, 212, 255, 0.2), transparent);
+            background-size: 200% 100%;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-center items-center overflow-hidden">
+<!-- Background Ambient Glows -->
+<div class="fixed inset-0 z-[-1] pointer-events-none">
+<div class="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-primary-container/10 rounded-full blur-[120px]"></div>
+<div class="absolute bottom-[-10%] right-[-10%] w-[600px] h-[600px] bg-secondary-container/5 rounded-full blur-[150px]"></div>
+</div>
+<!-- Main Content Container -->
+<main class="w-full max-w-xl px-margin-mobile md:px-0 flex flex-col items-center">
+<!-- Logo Section -->
+<div class="flex items-center gap-sm mb-lg">
+<div class="w-12 h-12 rounded-xl bg-primary-container flex items-center justify-center shadow-[0_0_20px_rgba(0,212,255,0.3)]">
+<span class="material-symbols-outlined text-on-primary-container text-[32px]" style="font-variation-settings: 'FILL' 1;">
+                    biotech
+                </span>
+</div>
+<span class="font-headline-md text-headline-md font-bold text-primary tracking-tight">Stratos Office</span>
+</div>
+<!-- Glass Loading Card -->
+<div class="glass-panel w-full rounded-xl p-lg flex flex-col items-center">
+<h1 class="font-headline-md text-headline-md text-on-surface mb-md text-center">Preparing Stratos Office</h1>
+<!-- Progress Section -->
+<div class="w-full mb-md">
+<div class="flex justify-between items-end mb-xs">
+<span class="font-label-md text-label-md text-primary-fixed-dim uppercase tracking-widest">System Initialization</span>
+<span class="font-headline-md text-headline-md text-primary-fixed-dim">47%</span>
+</div>
+<!-- Main Progress Bar -->
+<div class="w-full h-2 bg-surface-container-highest rounded-full overflow-hidden relative">
+<div class="absolute top-0 left-0 h-full bg-primary-container shadow-[0_0_15px_rgba(0,212,255,0.5)] rounded-full" style="width: 47%;"></div>
+<div class="absolute top-0 left-0 h-full w-full shimmer"></div>
+</div>
+</div>
+<!-- Status Info -->
+<div class="text-center space-y-xs">
+<p class="font-body-md text-body-md text-on-surface-variant">Downloading model files... This happens once and is cached.</p>
+<div class="flex items-center justify-center gap-base text-outline">
+<span class="material-symbols-outlined text-[18px]">schedule</span>
+<span class="font-label-md text-label-md uppercase tracking-wider">Estimated time remaining: 1m 24s</span>
+</div>
+</div>
+<!-- AI Spinner/Indicator -->
+<div class="mt-lg flex items-center gap-xs">
+<div class="w-2 h-2 rounded-full bg-secondary-container animate-pulse"></div>
+<div class="w-2 h-2 rounded-full bg-secondary-container/60 animate-pulse" style="animation-delay: 0.2s;"></div>
+<div class="w-2 h-2 rounded-full bg-secondary-container/30 animate-pulse" style="animation-delay: 0.4s;"></div>
+<span class="font-label-sm text-label-sm text-secondary ml-xs uppercase tracking-tighter">Connecting to Gemma 4 Cluster</span>
+</div>
+</div>
+<!-- System Branding / Security Note -->
+<div class="mt-xl flex flex-col items-center opacity-60">
+<div class="flex items-center gap-xs mb-xs">
+<span class="material-symbols-outlined text-[16px] text-outline">verified_user</span>
+<span class="font-label-sm text-label-sm text-outline">End-to-End Encrypted Environment</span>
+</div>
+<p class="font-label-sm text-label-sm text-outline">© 2024 Stratos Office. Private &amp; Secure AI.</p>
+</div>
+</main>
+<!-- Visual Aesthetic Element: Asymmetric Corner Ornament -->
+<div class="absolute top-md right-md opacity-20 hidden md:block">
+<div class="w-32 h-32 border-t border-r border-primary-container rounded-tr-3xl"></div>
+</div>
+<div class="absolute bottom-md left-md opacity-20 hidden md:block">
+<div class="w-32 h-32 border-b border-l border-primary-container rounded-bl-3xl"></div>
+</div>
+</body></html>
