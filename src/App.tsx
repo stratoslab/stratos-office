@@ -1,4 +1,3 @@
-import { useEffect } from "react";
 import { AnimatePresence } from "motion/react";
 import { ModelProvider, useModel } from "./context/ModelContext";
 import LandingPage from "./components/pages/LandingPage";
@@ -11,11 +10,7 @@ import SettingsDrawer from "./components/drawers/SettingsDrawer";
 import { Gauge } from "lucide-react";
 
 function AppContent() {
-  const { state, checkWebGPU } = useModel();
-
-  useEffect(() => {
-    checkWebGPU();
-  }, [checkWebGPU]);
+  const { state } = useModel();
 
   const isDashboard = state.stage === "ready";
 
