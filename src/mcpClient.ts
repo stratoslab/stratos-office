@@ -1,3 +1,4 @@
+const TINYFISH_URL = 'https://search.tinyfish.ai/search';
 const SEARCH_TTL = 5 * 60 * 1000;
 const FETCH_TTL = 15 * 60 * 1000;
 const SEARCH_TIMEOUT = 10000;
@@ -6,6 +7,7 @@ const MAX_SEARCH_RESULTS = 5;
 const MAX_FETCH_URLS = 3;
 const MAX_FETCH_CHARS = 8000;
 const MAX_COMBINED_CHARS = 24000;
+const STORAGE_KEY = 'stratos-tinyfish-key';
 
 interface SearchCacheEntry {
   results: Array<{ url: string; title: string; snippet: string }>;
@@ -20,14 +22,55 @@ interface FetchCacheEntry {
 const searchCache = new Map<string, SearchCacheEntry>();
 const fetchCache = new Map<string, FetchCacheEntry>();
 
-export class McpSearchError extends Error {
+export class McpAuthError extends Error {
   constructor(message: string) {
     super(message);
-    this.name = 'McpSearchError';
+    this.name = 'McpAuthError';
+  }
+}
+
+export class McpNetworkError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'McpNetworkError';
+  }
+}
+
+export function getApiKey(): string | null {
+  return localStorage.getItem(STORAGE_KEY);
+}
+
+export async function validateKey(key: string): Promise<'valid' | 'invalid' | 'network_error'> {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+    const response = await fetch(TINYFISH_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Key': key,
+      },
+      body: JSON.stringify({ query: 'test', limit: 1 }),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeoutId);
+
+    if (response.ok) return 'valid';
+    if (response.status === 401 || response.status === 403) return 'invalid';
+    return 'network_error';
+  } catch {
+    return 'network_error';
   }
 }
 
 export async function search(query: string): Promise<Array<{ url: string; title: string; snippet: string }>> {
+  const apiKey = getApiKey();
+  if (!apiKey) {
+    throw new McpAuthError('No API key configured');
+  }
+
   const cached = searchCache.get(query);
   if (cached && Date.now() - cached.timestamp < SEARCH_TTL) {
     return cached.results;
@@ -37,15 +80,23 @@ export async function search(query: string): Promise<Array<{ url: string; title:
   const timeoutId = setTimeout(() => controller.abort(), SEARCH_TIMEOUT);
 
   try {
-    const response = await fetch('/api/mcp/search', {
+    const response = await fetch(TINYFISH_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Key': apiKey,
+      },
       body: JSON.stringify({ query }),
       signal: controller.signal,
     });
 
+    if (response.status === 401 || response.status === 403) {
+      localStorage.removeItem(STORAGE_KEY);
+      throw new McpAuthError('API key is no longer valid');
+    }
+
     if (!response.ok) {
-      throw new McpSearchError(`Search failed: ${response.status}`);
+      throw new McpNetworkError(`Search failed: ${response.status}`);
     }
 
     const data = await response.json();
@@ -54,16 +105,22 @@ export async function search(query: string): Promise<Array<{ url: string; title:
     searchCache.set(query, { results, timestamp: Date.now() });
     return results;
   } catch (err) {
+    if (err instanceof McpAuthError) throw err;
     if (err instanceof DOMException && err.name === 'AbortError') {
-      throw new McpSearchError('Search timed out after 10 seconds');
+      throw new McpNetworkError('Search timed out after 10 seconds');
     }
-    throw err;
+    throw new McpNetworkError(err instanceof Error ? err.message : 'Search failed');
   } finally {
     clearTimeout(timeoutId);
   }
 }
 
 export async function fetchContent(url: string): Promise<string> {
+  const apiKey = getApiKey();
+  if (!apiKey) {
+    return '';
+  }
+
   const cached = fetchCache.get(url);
   if (cached && Date.now() - cached.timestamp < FETCH_TTL) {
     return cached.content;
@@ -73,12 +130,20 @@ export async function fetchContent(url: string): Promise<string> {
   const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT);
 
   try {
-    const response = await fetch('/api/mcp/fetch', {
+    const response = await fetch(TINYFISH_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'X-API-Key': apiKey,
+      },
       body: JSON.stringify({ url }),
       signal: controller.signal,
     });
+
+    if (response.status === 401 || response.status === 403) {
+      localStorage.removeItem(STORAGE_KEY);
+      throw new McpAuthError('API key is no longer valid');
+    }
 
     if (!response.ok) {
       return '';

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { AnimatePresence } from "motion/react";
 import { ModelProvider, useModel } from "./context/ModelContext";
+import { TaskProvider } from "./context/TaskContext";
 import LandingPage from "./components/pages/LandingPage";
 import LoadingPage from "./components/pages/LoadingPage";
 import DashboardPage from "./components/pages/DashboardPage";
@@ -140,7 +141,9 @@ function AppContent() {
 export default function App() {
   return (
     <ModelProvider>
-      <AppContent />
+      <TaskProvider>
+        <AppContent />
+      </TaskProvider>
     </ModelProvider>
   );
 }
