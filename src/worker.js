@@ -1,56 +1,27 @@
-import {
-  AutoProcessor,
-  Gemma4ForConditionalGeneration,
-  InterruptableStoppingCriteria,
-  TextStreamer,
-  load_image,
-  read_audio,
-  env,
-} from "@huggingface/transformers";
-
 const MODEL_ID = "onnx-community/gemma-4-E2B-it-ONNX";
 
-env.allowLocalModels = false;
+let transformersLoaded = false;
+let AutoProcessor, Gemma4ForConditionalGeneration, InterruptableStoppingCriteria, TextStreamer, load_image, read_audio, env;
 
-const originalFetch = globalThis.fetch.bind(globalThis);
-
-function postDebug(message: string, extra: Record<string, unknown> = {}) {
-  self.postMessage({
-    status: "debug",
-    data: {
-      message,
-      timestamp: new Date().toISOString(),
-      ...extra,
-    },
-  });
+async function loadTransformers() {
+  if (transformersLoaded) return;
+  const transformers = await import("https://cdn.jsdelivr.net/npm/@huggingface/transformers@4.0.1/+esm");
+  AutoProcessor = transformers.AutoProcessor;
+  Gemma4ForConditionalGeneration = transformers.Gemma4ForConditionalGeneration;
+  InterruptableStoppingCriteria = transformers.InterruptableStoppingCriteria;
+  TextStreamer = transformers.TextStreamer;
+  load_image = transformers.load_image;
+  read_audio = transformers.read_audio;
+  env = transformers.env;
+  env.allowLocalModels = false;
+  transformersLoaded = true;
 }
 
-globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
-  const url = typeof input === "string" ? input : input instanceof Request ? input.url : String(input);
-  const method = init?.method ?? "GET";
-
-  if (url.includes("huggingface.co") || url.includes("hf.co")) {
-    postDebug(`Fetch start ${method} ${url}`);
-    try {
-      const response = await originalFetch(input, init);
-      return response;
-    } catch (error) {
-      self.postMessage({
-        status: "error",
-        data: `Fetch error for ${url}: ${error instanceof Error ? error.message : String(error)}`,
-      });
-      throw error;
-    }
-  }
-
-  return originalFetch(input, init);
-};
-
 class ModelSession {
-  processor: Awaited<ReturnType<typeof AutoProcessor.from_pretrained>> | null = null;
-  model: Awaited<ReturnType<typeof Gemma4ForConditionalGeneration.from_pretrained>> | null = null;
-  stoppingCriteria = new InterruptableStoppingCriteria();
-  loadingPromise: Promise<void> | null = null;
+  processor = null;
+  model = null;
+  stoppingCriteria = null;
+  loadingPromise = null;
 
   async load() {
     if (this.model && this.processor) {
@@ -67,78 +38,75 @@ class ModelSession {
       data: `Loading Gemma 4 model (${MODEL_ID})...`,
     });
 
-    const progress_callback = (info: Record<string, unknown>) => {
+    this.loadingPromise = this._load().finally(() => {
+      this.loadingPromise = null;
+    });
+
+    await this.loadingPromise;
+  }
+
+  async _load() {
+    await loadTransformers();
+
+    if (!this.stoppingCriteria) {
+      this.stoppingCriteria = new InterruptableStoppingCriteria();
+    }
+
+    const progress_callback = (info) => {
       if (info.status === "progress_total") {
         self.postMessage({
           status: "progress",
-          progress: Math.round(Number(info.progress ?? 0)),
+          progress: Math.round(info.progress ?? 0),
         });
         return;
       }
       if (info.status === "download") {
         self.postMessage({
           status: "loading",
-          data: `Downloading ${String(info.name ?? "model shard")}...`,
+          data: `Downloading ${info.name ?? "model shard"}...`,
         });
       }
       if (info.status === "init") {
         self.postMessage({
           status: "loading",
-          data: `Initializing ${String(info.file ?? info.name ?? "model file")}...`,
+          data: `Initializing ${info.file ?? info.name ?? "model file"}...`,
         });
       }
       if (info.status === "done") {
         self.postMessage({
           status: "loading",
-          data: `Loaded ${String(info.file ?? info.name ?? "model file")}`,
+          data: `Loaded ${info.file ?? info.name ?? "model file"}`,
         });
       }
     };
 
-    this.loadingPromise = Promise.all([
+    const [processor, model] = await Promise.all([
       AutoProcessor.from_pretrained(MODEL_ID, { progress_callback }),
       Gemma4ForConditionalGeneration.from_pretrained(MODEL_ID, {
         dtype: "q4f16",
         device: "webgpu",
         progress_callback,
       }),
-    ])
-      .then(([processor, model]) => {
-        this.processor = processor;
-        this.model = model;
-        self.postMessage({ status: "ready" });
-      })
-      .catch((error) => {
-        self.postMessage({
-          status: "error",
-          data: error instanceof Error ? error.message : String(error),
-        });
-        throw error;
-      })
-      .finally(() => {
-        this.loadingPromise = null;
-      });
-
-    await this.loadingPromise;
+    ]);
+    this.processor = processor;
+    this.model = model;
+    self.postMessage({ status: "ready" });
   }
 
   interrupt() {
-    this.stoppingCriteria.interrupt();
+    this.stoppingCriteria?.interrupt();
   }
 
   reset() {
-    this.stoppingCriteria.reset();
+    this.stoppingCriteria?.reset();
   }
 }
 
 const session = new ModelSession();
 
-async function prepareInputs(
-  messages: Array<{ role: string; content: string | Array<{ type: string; [key: string]: unknown }> }>,
-  enableThinking: boolean,
-) {
+async function prepareInputs(messages, enableThinking) {
   const lastMessage = messages.at(-1);
-  const prompt = session.processor!.apply_chat_template([lastMessage], {
+  const prompt = session.processor.apply_chat_template([lastMessage], {
     add_generation_prompt: true,
     enable_thinking: enableThinking,
   });
@@ -147,24 +115,20 @@ async function prepareInputs(
   const imagePart = contentParts.find((part) => part.type === "image");
   const audioPart = contentParts.find((part) => part.type === "audio");
 
-  const image = imagePart?.image ? await load_image(imagePart.image as string) : null;
+  const image = imagePart?.image ? await load_image(imagePart.image) : null;
   const audio =
     typeof audioPart?.audio === "string"
       ? await read_audio(audioPart.audio, 16000)
       : audioPart?.audio
-        ? new Float32Array(audioPart.audio as number[])
+        ? new Float32Array(audioPart.audio)
         : null;
 
-  return session.processor!(prompt, image, audio, {
+  return session.processor(prompt, image, audio, {
     add_special_tokens: false,
   });
 }
 
-async function generate(
-  messages: Array<{ role: string; content: string | Array<{ type: string; [key: string]: unknown }> }>,
-  enableThinking: boolean,
-  maxNewTokens: number,
-) {
+async function generate(messages, enableThinking, maxNewTokens) {
   await session.load();
   session.reset();
 
@@ -174,10 +138,10 @@ async function generate(
 
   let outputText = "";
 
-  const streamer = new TextStreamer(session.processor!.tokenizer, {
+  const streamer = new TextStreamer(session.processor.tokenizer, {
     skip_prompt: true,
     skip_special_tokens: true,
-    callback_function: (text: string) => {
+    callback_function: (text) => {
       outputText += text;
       self.postMessage({
         status: "update",
@@ -187,7 +151,7 @@ async function generate(
   });
 
   const startedAt = performance.now();
-  const outputs = await session.model!.generate({
+  const outputs = await session.model.generate({
     ...inputs,
     max_new_tokens: maxNewTokens,
     do_sample: false,
@@ -201,7 +165,7 @@ async function generate(
   const elapsedSeconds = Math.max((performance.now() - startedAt) / 1000, 0.001);
 
   if (!outputText) {
-    const decoded = session.processor!.batch_decode(generated, {
+    const decoded = session.processor.batch_decode(generated, {
       skip_special_tokens: true,
     });
     outputText = decoded[0] ?? "";
@@ -220,7 +184,7 @@ async function generate(
   });
 }
 
-self.addEventListener("message", async (event: MessageEvent) => {
+self.addEventListener("message", async (event) => {
   const { type, data } = event.data;
 
   try {
@@ -259,14 +223,14 @@ self.addEventListener("message", async (event: MessageEvent) => {
   }
 });
 
-self.addEventListener("error", (event: ErrorEvent) => {
+self.addEventListener("error", (event) => {
   self.postMessage({
     status: "error",
     data: event.message || "Worker error",
   });
 });
 
-self.addEventListener("unhandledrejection", (event: PromiseRejectionEvent) => {
+self.addEventListener("unhandledrejection", (event) => {
   const reason =
     event.reason instanceof Error ? event.reason.message : String(event.reason);
   self.postMessage({
