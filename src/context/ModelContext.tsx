@@ -2,7 +2,7 @@ import { createContext, useContext, useRef, useState, useCallback, useEffect, ty
 import type { ModelState, ModelStage, WorkerResponse } from "../types";
 
 const initialState: ModelState = {
-  stage: "idle",
+  stage: "checking",
   progress: 0,
   currentFile: "",
   totalFiles: 0,
@@ -17,7 +17,6 @@ const initialState: ModelState = {
 interface ModelContextValue {
   state: ModelState;
   workerRef: React.MutableRefObject<Worker | null>;
-  checkWebGPU: () => void;
   loadModel: () => void;
   generate: (messages: Array<{ role: string; content: string | Array<{ type: string; [key: string]: unknown }> }>, options?: { enableThinking?: boolean; maxNewTokens?: number }) => void;
   interrupt: () => void;
@@ -54,6 +53,14 @@ export function ModelProvider({ children }: { children: ReactNode }) {
           setState((prev) => ({
             ...prev,
             stage: (event.data as { supported: boolean }).supported ? "idle" : "unsupported",
+          }));
+          break;
+
+        case "init":
+          setState((prev) => ({
+            ...prev,
+            stage: "loading",
+            currentFile: typeof data === "string" ? data : prev.currentFile,
           }));
           break;
 
@@ -116,15 +123,12 @@ export function ModelProvider({ children }: { children: ReactNode }) {
       }
     });
 
+    worker.postMessage({ type: "check" });
+
     return () => {
       worker.terminate();
       workerRef.current = null;
     };
-  }, []);
-
-  const checkWebGPU = useCallback(() => {
-    setState((prev) => ({ ...prev, stage: "checking" }));
-    workerRef.current?.postMessage({ type: "check" });
   }, []);
 
   const loadModel = useCallback(() => {
@@ -168,7 +172,6 @@ export function ModelProvider({ children }: { children: ReactNode }) {
       value={{
         state,
         workerRef,
-        checkWebGPU,
         loadModel,
         generate,
         interrupt,
