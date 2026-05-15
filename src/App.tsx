@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useEffect } from "react";
 import { AnimatePresence } from "motion/react";
+import { ModelProvider, useModel } from "./context/ModelContext";
 import LandingPage from "./components/pages/LandingPage";
 import LoadingPage from "./components/pages/LoadingPage";
 import DashboardPage from "./components/pages/DashboardPage";
@@ -9,43 +10,44 @@ import HistoryDrawer from "./components/drawers/HistoryDrawer";
 import SettingsDrawer from "./components/drawers/SettingsDrawer";
 import { Gauge } from "lucide-react";
 
-type AppStage = "landing" | "loading" | "dashboard";
+function AppContent() {
+  const { state, checkWebGPU } = useModel();
 
-export default function App() {
-  const [stage, setStage] = useState<AppStage>("landing");
-  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  useEffect(() => {
+    checkWebGPU();
+  }, [checkWebGPU]);
+
+  const isDashboard = state.stage === "ready";
 
   return (
     <div className="flex flex-col min-h-screen bg-background text-on-background relative overflow-hidden selection:bg-primary-container selection:text-on-primary-container">
-      {/* Dynamic Header */}
-      {stage !== "loading" && <TopBar />}
+      {isDashboard && <TopBar />}
 
       <div className="flex flex-1 pt-16 h-screen overflow-hidden">
-        {/* Dynamic Sidebar */}
-        {stage === "dashboard" && (
-          <Sidebar 
-            onOpenHistory={() => setIsHistoryOpen(true)} 
-            onOpenSettings={() => setIsSettingsOpen(true)} 
+        {isDashboard && (
+          <Sidebar
+            onOpenHistory={() => {}}
+            onOpenSettings={() => {}}
           />
         )}
 
-        {/* Main Content Area */}
         <AnimatePresence mode="wait">
-          {stage === "landing" && (
-            <LandingPage key="landing" onLoad={() => setStage("loading")} />
+          {(state.stage === "idle" || state.stage === "checking" || state.stage === "unsupported") && (
+            <LandingPage key="landing" />
           )}
-          {stage === "loading" && (
-            <LoadingPage key="loading" onComplete={() => setStage("dashboard")} />
+          {(state.stage === "downloading" || state.stage === "loading") && (
+            <LoadingPage key="loading" />
           )}
-          {stage === "dashboard" && (
+          {state.stage === "ready" && (
             <DashboardPage key="dashboard" />
+          )}
+          {state.stage === "error" && (
+            <LoadingPage key="error" />
           )}
         </AnimatePresence>
       </div>
 
-      {/* Dynamic Footer */}
-      {stage === "landing" && (
+      {state.stage === "idle" && (
         <footer className="bg-surface-container-lowest/20 backdrop-blur-sm text-outline border-t border-white/5 flex justify-between items-center px-8 py-3 relative z-20">
           <div className="flex items-center gap-3">
             <span className="text-sm font-bold text-primary">Stratos Office</span>
@@ -54,12 +56,11 @@ export default function App() {
           <div className="flex items-center gap-6">
             <a className="text-xs text-outline/80 hover:text-primary transition-colors" href="#">Privacy</a>
             <a className="text-xs text-outline/80 hover:text-primary transition-colors" href="#">Terms</a>
-            <a className="text-xs text-outline/80 hover:text-primary transition-colors" href="#">API Status</a>
           </div>
         </footer>
       )}
 
-      {stage === "dashboard" && (
+      {isDashboard && (
         <footer className="fixed bottom-0 z-50 flex justify-between items-center w-full px-8 h-10 bg-surface-container-lowest/20 backdrop-blur-sm border-t border-white/5">
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-2">
@@ -69,7 +70,7 @@ export default function App() {
             <div className="flex items-center gap-3 border-l border-white/10 pl-6">
               <Gauge className="w-3.5 h-3.5 text-outline" />
               <span className="text-[10px] font-bold text-outline uppercase tracking-wider">
-                Token speed: <span className="text-primary-fixed-dim">124 t/s</span>
+                Token speed: <span className="text-primary-fixed-dim">{state.tps ? `${state.tps.toFixed(1)} t/s` : "—"}</span>
               </span>
             </div>
           </div>
@@ -80,21 +81,19 @@ export default function App() {
             </div>
             <div className="flex items-center gap-2 border-l border-white/10 pl-6">
               <span className="text-[10px] text-outline uppercase font-bold tracking-widest opacity-60">Version:</span>
-              <span className="text-[10px] text-primary font-bold tracking-widest">v4.0.2-pro</span>
+              <span className="text-[10px] text-primary font-bold tracking-widest">v0.1.0</span>
             </div>
           </div>
         </footer>
       )}
-
-      {/* Drawers */}
-      <HistoryDrawer 
-        isOpen={isHistoryOpen} 
-        onClose={() => setIsHistoryOpen(false)} 
-      />
-      <SettingsDrawer 
-        isOpen={isSettingsOpen} 
-        onClose={() => setIsSettingsOpen(false)} 
-      />
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <ModelProvider>
+      <AppContent />
+    </ModelProvider>
   );
 }
