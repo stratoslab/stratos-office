@@ -282,7 +282,7 @@ Five bugs prevent the Stratos Office model from loading. Tasks are ordered by de
     - Assert `src/index.css` contains no `@import url(` line referencing Google Fonts
     - _Requirements: 2.8, 2.9, 3.8, 3.9_
 
-- [ ] 11. Checkpoint — ensure all tests pass and app loads correctly
+- [x] 11. Checkpoint — ensure all tests pass and app loads correctly
   - Re-run all exploration tests (tasks 1, 4, 7) — all should PASS after fixes
   - Re-run all preservation tests (tasks 2, 5) — all should PASS
   - Run `npm run build` (or `vite build`) and verify it succeeds with only `vite.config.ts` present
