@@ -1,5 +1,5 @@
 import { createContext, useContext, useRef, useState, useCallback, useEffect, type ReactNode } from "react";
-import type { ModelState, ModelStage, WorkerResponse } from "@/types";
+import type { ModelState, ModelStage, WorkerResponse } from "../types";
 
 const initialState: ModelState = {
   stage: "idle",

@@ -1,6 +1,6 @@
 import { motion } from "motion/react";
 import { Cpu, FileAudio, Brain, Zap, ShieldCheck, AlertTriangle } from "lucide-react";
-import { useModel } from "@/context/ModelContext";
+import { useModel } from "../../context/ModelContext";
 
 export default function LandingPage() {
   const { state, loadModel } = useModel();
