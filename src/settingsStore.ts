@@ -1,6 +1,7 @@
 import { AppSettings, DEFAULT_SETTINGS } from './types';
 
 const STORAGE_KEY = 'stratos-settings';
+const TINYFISH_KEY = 'stratos-tinyfish-key';
 
 export function loadSettings(): AppSettings {
   try {
@@ -21,4 +22,18 @@ export function updateSetting<K extends keyof AppSettings>(key: K, value: AppSet
   const current = loadSettings();
   current[key] = value;
   saveSettings(current);
+}
+
+export function isTinyfishConnected(): boolean {
+  return Boolean(localStorage.getItem(TINYFISH_KEY));
+}
+
+export function getTinyfishKeyMasked(): string | null {
+  const key = localStorage.getItem(TINYFISH_KEY);
+  if (!key) return null;
+  return '••••••••••••' + key.slice(-4);
+}
+
+export function removeTinyfishKey(): void {
+  localStorage.removeItem(TINYFISH_KEY);
 }

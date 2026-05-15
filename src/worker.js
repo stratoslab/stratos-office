@@ -113,6 +113,76 @@ class ModelSession {
 
 const session = new ModelSession();
 
+async function handleTask(data) {
+  const { taskId, taskType, messages, enableThinking, maxNewTokens, pass } = data;
+
+  self.postMessage({ status: "task_start", taskId });
+
+  session.reset();
+  const inputs = await prepareInputs(messages, enableThinking);
+
+  let outputText = "";
+
+  const streamer = new TextStreamer(session.processor.tokenizer, {
+    skip_prompt: true,
+    skip_special_tokens: true,
+    callback_function: (text) => {
+      outputText += text;
+      self.postMessage({
+        status: "task_update",
+        output: text,
+        taskId,
+      });
+    },
+  });
+
+  const startedAt = performance.now();
+  const outputs = await session.model.generate({
+    ...inputs,
+    max_new_tokens: maxNewTokens,
+    do_sample: false,
+    streamer,
+    stopping_criteria: [session.stoppingCriteria],
+  });
+
+  const promptLength = inputs.input_ids.dims.at(-1) ?? 0;
+  const generated = outputs.slice(null, [promptLength, null]);
+  const outputTokens = generated.dims.at(-1) ?? 0;
+  const elapsedSeconds = Math.max((performance.now() - startedAt) / 1000, 0.001);
+
+  if (!outputText) {
+    const decoded = session.processor.batch_decode(generated, {
+      skip_special_tokens: true,
+    });
+    outputText = decoded[0] ?? "";
+    if (outputText) {
+      self.postMessage({
+        status: "task_update",
+        output: outputText,
+        taskId,
+      });
+    }
+  }
+
+  if (pass === 1 && (taskType === "meeting_minutes" || taskType === "voice_to_email")) {
+    self.postMessage({
+      status: "task_pass1_complete",
+      taskId,
+      output: outputText,
+      numTokens: outputTokens,
+      tps: outputTokens / elapsedSeconds,
+    });
+    return;
+  }
+
+  self.postMessage({
+    status: "task_complete",
+    taskId,
+    numTokens: outputTokens,
+    tps: outputTokens / elapsedSeconds,
+  });
+}
+
 async function prepareInputs(messages, enableThinking) {
   const lastMessage = messages.at(-1);
   const prompt = session.processor.apply_chat_template([lastMessage], {
@@ -213,6 +283,12 @@ self.addEventListener("message", async (event) => {
           Boolean(data.enableThinking),
           data.maxNewTokens ?? 1024,
         );
+        break;
+      case "task":
+        await handleTask(data);
+        break;
+      case "cancel_task":
+        session.interrupt();
         break;
       case "interrupt":
         session.interrupt();
