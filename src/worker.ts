@@ -1,9 +1,18 @@
-const MODEL_ID = "onnx-community/gemma-3-1b-it-GGUF";
+import {
+  AutoProcessor,
+  Gemma4ForConditionalGeneration,
+  InterruptableStoppingCriteria,
+  TextStreamer,
+  load_image,
+  read_audio,
+  env,
+} from "@huggingface/transformers";
+
+const MODEL_ID = "onnx-community/gemma-4-E2B-it-ONNX";
+
+env.allowLocalModels = false;
 
 const originalFetch = globalThis.fetch.bind(globalThis);
-
-let downloadStartTime = 0;
-let totalBytesDownloaded = 0;
 
 function postDebug(message: string, extra: Record<string, unknown> = {}) {
   self.postMessage({
@@ -24,12 +33,6 @@ globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
     postDebug(`Fetch start ${method} ${url}`);
     try {
       const response = await originalFetch(input, init);
-      if (response.ok) {
-        const contentLength = response.headers.get("content-length");
-        if (contentLength) {
-          totalBytesDownloaded += parseInt(contentLength, 10);
-        }
-      }
       return response;
     } catch (error) {
       self.postMessage({
@@ -43,28 +46,10 @@ globalThis.fetch = async (input: RequestInfo | URL, init?: RequestInit) => {
   return originalFetch(input, init);
 };
 
-let AutoProcessor: any;
-let Gemma3ForConditionalGeneration: any;
-let InterruptableStoppingCriteria: any;
-let TextStreamer: any;
-let load_image: any;
-let read_audio: any;
-
-async function loadTransformers() {
-  if (AutoProcessor) return;
-  const transformers = await import("https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.5.0/+esm");
-  AutoProcessor = transformers.AutoProcessor;
-  Gemma3ForConditionalGeneration = transformers.Gemma3ForConditionalGeneration;
-  InterruptableStoppingCriteria = transformers.InterruptableStoppingCriteria;
-  TextStreamer = transformers.TextStreamer;
-  load_image = transformers.load_image;
-  read_audio = transformers.read_audio;
-}
-
 class ModelSession {
-  processor: any = null;
-  model: any = null;
-  stoppingCriteria: any = null;
+  processor: Awaited<ReturnType<typeof AutoProcessor.from_pretrained>> | null = null;
+  model: Awaited<ReturnType<typeof Gemma4ForConditionalGeneration.from_pretrained>> | null = null;
+  stoppingCriteria = new InterruptableStoppingCriteria();
   loadingPromise: Promise<void> | null = null;
 
   async load() {
@@ -73,58 +58,36 @@ class ModelSession {
       return;
     }
     if (this.loadingPromise) {
-      return this.loadingPromise;
+      await this.loadingPromise;
+      return;
     }
-
-    downloadStartTime = performance.now();
-    totalBytesDownloaded = 0;
 
     self.postMessage({
       status: "loading",
-      data: "Initializing model download...",
+      data: `Loading Gemma 4 model (${MODEL_ID})...`,
     });
-
-    this.loadingPromise = this._load().finally(() => {
-      this.loadingPromise = null;
-    });
-
-    return this.loadingPromise;
-  }
-
-  async _load() {
-    await loadTransformers();
-
-    if (!this.stoppingCriteria) {
-      this.stoppingCriteria = new InterruptableStoppingCriteria();
-    }
 
     const progress_callback = (info: Record<string, unknown>) => {
-      postDebug(
-        info.status === "download"
-          ? `Downloading ${String(info.name ?? "model file")}...`
-          : info.status === "progress_total"
-            ? `Loading model assets: ${Math.round(Number(info.progress ?? 0))}%`
-            : `Model loader status: ${String(info.status)}`,
-        { phase: "progress", info },
-      );
-
       if (info.status === "progress_total") {
         self.postMessage({
           status: "progress",
-          progress: info.progress,
+          progress: Math.round(Number(info.progress ?? 0)),
         });
-      } else if (info.status === "download") {
-        const fileName = info.file ?? info.name ?? "model file";
+        return;
+      }
+      if (info.status === "download") {
         self.postMessage({
           status: "loading",
-          data: `Downloading ${String(fileName)}...`,
+          data: `Downloading ${String(info.name ?? "model shard")}...`,
         });
-      } else if (info.status === "init") {
+      }
+      if (info.status === "init") {
         self.postMessage({
           status: "loading",
           data: `Initializing ${String(info.file ?? info.name ?? "model file")}...`,
         });
-      } else if (info.status === "done") {
+      }
+      if (info.status === "done") {
         self.postMessage({
           status: "loading",
           data: `Loaded ${String(info.file ?? info.name ?? "model file")}`,
@@ -132,33 +95,39 @@ class ModelSession {
       }
     };
 
-    try {
-      const [processor, model] = await Promise.all([
-        AutoProcessor.from_pretrained(MODEL_ID, { progress_callback }),
-        Gemma3ForConditionalGeneration.from_pretrained(MODEL_ID, {
-          dtype: "q4",
-          device: "webgpu",
-          progress_callback,
-        }),
-      ]);
-      this.processor = processor;
-      this.model = model;
-      self.postMessage({ status: "ready" });
-    } catch (error) {
-      self.postMessage({
-        status: "error",
-        data: error instanceof Error ? error.message : String(error),
+    this.loadingPromise = Promise.all([
+      AutoProcessor.from_pretrained(MODEL_ID, { progress_callback }),
+      Gemma4ForConditionalGeneration.from_pretrained(MODEL_ID, {
+        dtype: "q4f16",
+        device: "webgpu",
+        progress_callback,
+      }),
+    ])
+      .then(([processor, model]) => {
+        this.processor = processor;
+        this.model = model;
+        self.postMessage({ status: "ready" });
+      })
+      .catch((error) => {
+        self.postMessage({
+          status: "error",
+          data: error instanceof Error ? error.message : String(error),
+        });
+        throw error;
+      })
+      .finally(() => {
+        this.loadingPromise = null;
       });
-      throw error;
-    }
+
+    await this.loadingPromise;
   }
 
   interrupt() {
-    this.stoppingCriteria?.interrupt();
+    this.stoppingCriteria.interrupt();
   }
 
   reset() {
-    this.stoppingCriteria?.reset();
+    this.stoppingCriteria.reset();
   }
 }
 
@@ -169,7 +138,7 @@ async function prepareInputs(
   enableThinking: boolean,
 ) {
   const lastMessage = messages.at(-1);
-  const prompt = session.processor.apply_chat_template([lastMessage], {
+  const prompt = session.processor!.apply_chat_template([lastMessage], {
     add_generation_prompt: true,
     enable_thinking: enableThinking,
   });
@@ -186,7 +155,7 @@ async function prepareInputs(
         ? new Float32Array(audioPart.audio as number[])
         : null;
 
-  return session.processor(prompt, image, audio, {
+  return session.processor!(prompt, image, audio, {
     add_special_tokens: false,
   });
 }
@@ -205,7 +174,7 @@ async function generate(
 
   let outputText = "";
 
-  const streamer = new TextStreamer(session.processor.tokenizer, {
+  const streamer = new TextStreamer(session.processor!.tokenizer, {
     skip_prompt: true,
     skip_special_tokens: true,
     callback_function: (text: string) => {
@@ -218,7 +187,7 @@ async function generate(
   });
 
   const startedAt = performance.now();
-  const outputs = await session.model.generate({
+  const outputs = await session.model!.generate({
     ...inputs,
     max_new_tokens: maxNewTokens,
     do_sample: false,
@@ -226,13 +195,13 @@ async function generate(
     stopping_criteria: [session.stoppingCriteria],
   });
 
-  const promptLength = inputs.input_ids.dims.at(-1) as number;
+  const promptLength = inputs.input_ids.dims.at(-1) ?? 0;
   const generated = outputs.slice(null, [promptLength, null]);
   const outputTokens = generated.dims.at(-1) ?? 0;
   const elapsedSeconds = Math.max((performance.now() - startedAt) / 1000, 0.001);
 
   if (!outputText) {
-    const decoded = session.processor.batch_decode(generated, {
+    const decoded = session.processor!.batch_decode(generated, {
       skip_special_tokens: true,
     });
     outputText = decoded[0] ?? "";
