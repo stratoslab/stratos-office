@@ -8,11 +8,11 @@ interface HistoryDrawerProps {
 
 export default function HistoryDrawer({ isOpen, onClose }: HistoryDrawerProps) {
   const historyItems = [
-    { icon: FileText, label: "Document OCR", time: "2 min ago", status: "Success", color: "text-secondary-container" },
-    { icon: ImageIcon, label: "Visual Synthesis", time: "15 min ago", status: "Success", color: "text-secondary-container" },
-    { icon: BarChart3, label: "Data Clustering", time: "Now", status: "In Progress", color: "text-primary-container", active: true },
-    { icon: FileEdit, label: "Audit Summary", time: "1h ago", status: "Success", color: "text-secondary-container" },
-    { icon: ShieldAlert, label: "Batch Import", time: "2h ago", status: "Failed", color: "text-error" },
+    { icon: FileText, label: "Document OCR", time: "2 min ago", status: "Success", color: "var(--secondary-container)" },
+    { icon: ImageIcon, label: "Visual Synthesis", time: "15 min ago", status: "Success", color: "var(--secondary-container)" },
+    { icon: BarChart3, label: "Data Clustering", time: "Now", status: "In Progress", color: "var(--primary-container)", active: true },
+    { icon: FileEdit, label: "Audit Summary", time: "1h ago", status: "Success", color: "var(--secondary-container)" },
+    { icon: ShieldAlert, label: "Batch Import", time: "2h ago", status: "Failed", color: "var(--error)" },
   ];
 
   return (
@@ -24,57 +24,65 @@ export default function HistoryDrawer({ isOpen, onClose }: HistoryDrawerProps) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-background/60 backdrop-blur-sm z-[60]"
+            className="fixed inset-0 z-[60]"
+            style={{ background: "rgba(0, 20, 42, 0.6)", backdropFilter: "blur(4px)" }}
           />
           <motion.div
             initial={{ x: "100%" }}
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className="fixed inset-y-0 right-0 w-full max-w-[360px] z-[70] glass-panel flex flex-col shadow-2xl border-l border-white/10"
+            className="fixed inset-y-0 right-0 w-full z-[70] glass-panel flex flex-col shadow-2xl"
+            style={{ maxWidth: "360px", borderLeft: "1px solid rgba(255,255,255,0.1)" }}
           >
-            {/* Header */}
-            <div className="h-16 flex items-center justify-between px-6 border-b border-white/10 shrink-0">
-              <h2 className="text-xl font-bold text-on-background">Task History</h2>
+            <div className="h-16 flex items-center justify-between px-6 shrink-0" style={{ borderBottom: "1px solid rgba(255,255,255,0.1)" }}>
+              <h2 className="text-xl font-bold" style={{ color: "var(--on-background)" }}>Task History</h2>
               <button 
                 onClick={onClose}
-                className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-white/10 transition-colors text-outline"
+                className="w-8 h-8 rounded-full flex items-center justify-center transition-colors"
+                style={{ color: "var(--outline)" }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.1)")}
+                onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Search */}
             <div className="p-6 shrink-0">
               <div className="relative group">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-outline w-4 h-4 group-focus-within:text-primary transition-colors" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 transition-colors" style={{ color: "var(--outline)" }} />
                 <input 
-                  className="w-full bg-white/5 border border-white/10 rounded-xl py-2.5 pl-10 pr-4 text-sm text-on-background focus:ring-1 focus:ring-primary focus:border-primary placeholder:text-outline/50 outline-none transition-all" 
+                  className="w-full border rounded-xl py-2.5 pl-10 pr-4 text-sm outline-none transition-all" 
+                  style={{ background: "rgba(255,255,255,0.05)", borderColor: "rgba(255,255,255,0.1)", color: "var(--on-background)" }}
                   placeholder="Search tasks..." 
                   type="text" 
                 />
               </div>
             </div>
 
-            {/* History List */}
             <div className="flex-1 overflow-y-auto px-4 space-y-2 py-2">
               {historyItems.map((item, idx) => (
                 <div 
                   key={idx}
-                  className={`glass-panel p-3 rounded-xl border-white/5 hover:border-primary/20 transition-all cursor-pointer group ${item.active ? 'bg-primary/5' : ''}`}
+                  className="glass-panel p-3 rounded-xl border-white/5 hover:border-primary/20 transition-all cursor-pointer group"
+                  style={item.active ? { background: "rgba(168, 232, 255, 0.05)" } : {}}
                 >
                   <div className="flex gap-4">
-                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center transition-transform group-hover:scale-110 ${item.status === 'Failed' ? 'bg-error/10 text-error' : 'bg-primary/10 text-primary'}`}>
+                    <div className="w-10 h-10 rounded-lg flex items-center justify-center transition-transform group-hover:scale-110"
+                      style={item.status === 'Failed' ? { background: "rgba(255, 180, 171, 0.1)", color: "var(--error)" } : { background: "rgba(168, 232, 255, 0.1)", color: "var(--primary)" }}
+                    >
                       <item.icon className="w-5 h-5" />
                     </div>
                     <div className="flex-1">
                       <div className="flex justify-between items-start">
-                        <span className="text-sm font-bold text-on-surface">{item.label}</span>
-                        <span className="text-[10px] text-outline font-medium">{item.time}</span>
+                        <span className="text-sm font-bold" style={{ color: "var(--on-surface)" }}>{item.label}</span>
+                        <span className="text-[10px] font-medium" style={{ color: "var(--outline)" }}>{item.time}</span>
                       </div>
                       <div className="flex items-center gap-1.5 mt-1">
-                        <div className={`w-1.5 h-1.5 rounded-full ${item.status === 'In Progress' ? 'bg-primary-container animate-pulse' : (item.status === 'Failed' ? 'bg-error' : 'bg-secondary-container ai-pulse')}`}></div>
-                        <span className={`text-[10px] font-bold ${item.color}`}>{item.status}</span>
+                        <div className="w-1.5 h-1.5 rounded-full"
+                          style={item.status === 'In Progress' ? { background: "var(--primary-container)" } : (item.status === 'Failed' ? { background: "var(--error)" } : { background: "var(--secondary-container)" })}
+                        ></div>
+                        <span className="text-[10px] font-bold" style={{ color: item.color }}>{item.status}</span>
                       </div>
                     </div>
                   </div>
@@ -82,9 +90,12 @@ export default function HistoryDrawer({ isOpen, onClose }: HistoryDrawerProps) {
               ))}
             </div>
 
-            {/* Footer */}
-            <div className="p-6 border-t border-white/10 bg-surface-container-lowest/20 backdrop-blur-sm">
-              <button className="w-full py-3 bg-error-container/20 text-error font-bold text-xs uppercase tracking-wider rounded-xl hover:bg-error-container/30 transition-all flex items-center justify-center gap-2 active:scale-[0.98]">
+            <div className="p-6 bg-surface-container-lowest/20 backdrop-blur-sm" style={{ borderTop: "1px solid rgba(255,255,255,0.1)", background: "rgba(0, 15, 33, 0.2)" }}>
+              <button className="w-full py-3 font-bold text-xs uppercase tracking-wider rounded-xl transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
+                style={{ background: "rgba(147, 0, 10, 0.2)", color: "var(--error)" }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(147, 0, 10, 0.3)")}
+                onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(147, 0, 10, 0.2)")}
+              >
                 <Trash2 className="w-4 h-4" />
                 Clear All History
               </button>
