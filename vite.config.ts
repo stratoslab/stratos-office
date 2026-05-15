@@ -9,9 +9,6 @@ export default defineConfig({
       'Cross-Origin-Embedder-Policy': 'credentialless',
     },
   },
-  optimizeDeps: {
-    exclude: ['@huggingface/transformers'],
-  },
   plugins: [react(), tailwindcss()],
   worker: {
     format: 'es',
