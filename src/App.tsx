@@ -20,7 +20,7 @@ function AppContent() {
   const isDashboard = state.stage === "ready";
 
   return (
-    <div className="flex flex-col min-h-screen bg-background text-on-background relative overflow-hidden selection:bg-primary-container selection:text-on-primary-container">
+    <div className="flex flex-col min-h-screen relative overflow-hidden" style={{ background: "var(--background)", color: "var(--on-background)" }}>
       {isDashboard && <TopBar />}
 
       <div className="flex flex-1 pt-16 h-screen overflow-hidden">
@@ -48,40 +48,40 @@ function AppContent() {
       </div>
 
       {state.stage === "idle" && (
-        <footer className="bg-surface-container-lowest/20 backdrop-blur-sm text-outline border-t border-white/5 flex justify-between items-center px-8 py-3 relative z-20">
+        <footer className="border-t flex justify-between items-center px-8 py-3 relative z-20" style={{ background: "rgba(0, 15, 33, 0.2)", backdropFilter: "blur(8px)", borderColor: "rgba(255,255,255,0.05)" }}>
           <div className="flex items-center gap-3">
-            <span className="text-sm font-bold text-primary">Stratos Office</span>
-            <span className="text-xs text-outline/60">© 2024 Stratos Office. Private & Secure AI.</span>
+            <span className="text-sm font-bold" style={{ color: "var(--primary)" }}>Stratos Office</span>
+            <span className="text-xs" style={{ color: "rgba(133, 147, 152, 0.6)" }}>© 2024 Stratos Office. Private & Secure AI.</span>
           </div>
           <div className="flex items-center gap-6">
-            <a className="text-xs text-outline/80 hover:text-primary transition-colors" href="#">Privacy</a>
-            <a className="text-xs text-outline/80 hover:text-primary transition-colors" href="#">Terms</a>
+            <a className="text-xs hover:underline transition-colors" style={{ color: "rgba(133, 147, 152, 0.8)" }} href="#">Privacy</a>
+            <a className="text-xs hover:underline transition-colors" style={{ color: "rgba(133, 147, 152, 0.8)" }} href="#">Terms</a>
           </div>
         </footer>
       )}
 
       {isDashboard && (
-        <footer className="fixed bottom-0 z-50 flex justify-between items-center w-full px-8 h-10 bg-surface-container-lowest/20 backdrop-blur-sm border-t border-white/5">
+        <footer className="fixed bottom-0 z-50 flex justify-between items-center w-full px-8 h-10 border-t" style={{ background: "rgba(0, 15, 33, 0.2)", backdropFilter: "blur(8px)", borderColor: "rgba(255,255,255,0.05)" }}>
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-secondary shadow-[0_0_8px_#00e5cc]"></div>
-              <span className="text-[10px] font-bold text-on-surface uppercase tracking-wider">Gemma 4 Ready</span>
+              <div className="w-2 h-2 rounded-full" style={{ background: "var(--secondary)", boxShadow: "0 0 8px #00e5cc" }}></div>
+              <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "var(--on-surface)" }}>Gemma 4 Ready</span>
             </div>
-            <div className="flex items-center gap-3 border-l border-white/10 pl-6">
-              <Gauge className="w-3.5 h-3.5 text-outline" />
-              <span className="text-[10px] font-bold text-outline uppercase tracking-wider">
-                Token speed: <span className="text-primary-fixed-dim">{state.tps ? `${state.tps.toFixed(1)} t/s` : "—"}</span>
+            <div className="flex items-center gap-3 border-l pl-6" style={{ borderColor: "rgba(255,255,255,0.1)" }}>
+              <Gauge className="w-3.5 h-3.5" style={{ color: "var(--outline)" }} />
+              <span className="text-[10px] font-bold uppercase tracking-wider" style={{ color: "var(--outline)" }}>
+                Token speed: <span style={{ color: "var(--primary-fixed-dim)" }}>{state.tps ? `${state.tps.toFixed(1)} t/s` : "—"}</span>
               </span>
             </div>
           </div>
           <div className="flex items-center gap-8">
             <div className="hidden sm:flex items-center gap-6">
-              <a className="text-[10px] font-bold text-outline hover:text-primary transition-colors uppercase tracking-widest" href="#">Privacy</a>
-              <a className="text-[10px] font-bold text-outline hover:text-primary transition-colors uppercase tracking-widest" href="#">Terms</a>
+              <a className="text-[10px] font-bold hover:underline uppercase tracking-widest" style={{ color: "var(--outline)" }} href="#">Privacy</a>
+              <a className="text-[10px] font-bold hover:underline uppercase tracking-widest" style={{ color: "var(--outline)" }} href="#">Terms</a>
             </div>
-            <div className="flex items-center gap-2 border-l border-white/10 pl-6">
-              <span className="text-[10px] text-outline uppercase font-bold tracking-widest opacity-60">Version:</span>
-              <span className="text-[10px] text-primary font-bold tracking-widest">v0.1.0</span>
+            <div className="flex items-center gap-2 border-l pl-6" style={{ borderColor: "rgba(255,255,255,0.1)" }}>
+              <span className="text-[10px] uppercase font-bold tracking-widest opacity-60" style={{ color: "var(--outline)" }}>Version:</span>
+              <span className="text-[10px] font-bold tracking-widest" style={{ color: "var(--primary)" }}>v0.1.0</span>
             </div>
           </div>
         </footer>
