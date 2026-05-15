@@ -52,12 +52,21 @@ class ModelSession {
       this.stoppingCriteria = new InterruptableStoppingCriteria();
     }
 
+    const fileProgress = new Map(); // filename → { loaded, total }
+
     const progress_callback = (info) => {
-      if (info.status === "progress_total") {
-        self.postMessage({
-          status: "progress",
-          progress: Math.round(info.progress ?? 0),
+      if (info.status === "progress") {
+        const key = info.file ?? info.name ?? "unknown";
+        fileProgress.set(key, {
+          loaded: info.loaded ?? 0,
+          total: info.total ?? 0,
         });
+        const totalLoaded = [...fileProgress.values()].reduce((s, e) => s + e.loaded, 0);
+        const totalBytes = [...fileProgress.values()].reduce((s, e) => s + e.total, 0);
+        const overallPercent = totalBytes > 0
+          ? Math.round((totalLoaded / totalBytes) * 100)
+          : 0;
+        self.postMessage({ status: "progress", progress: overallPercent });
         return;
       }
       if (info.status === "download") {
@@ -68,7 +77,7 @@ class ModelSession {
       }
       if (info.status === "init") {
         self.postMessage({
-          status: "loading",
+          status: "init",
           data: `Initializing ${info.file ?? info.name ?? "model file"}...`,
         });
       }
