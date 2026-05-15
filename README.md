@@ -1,36 +1,55 @@
 # Stratos Office — AI Office Assistant
 
-> **Private, browser-only AI office assistant powered by Gemma 4 on WebGPU.**
+> **Private, browser-only AI that runs entirely on your device. No data ever leaves your browser.**
 
-Stratos Office is a browser-based AI office assistant that runs **100% locally** on your device. No prompts, documents, or audio ever leave your browser. It uses Google's **Gemma 4 E2B** model with ONNX on WebGPU for multimodal inference — text, images, and audio all processed on-device.
+Stratos Office is an AI office assistant powered by Google's **Gemma 4** running locally in your browser via WebGPU. Upload a document, record your voice, or type a request — everything is processed on your machine.
 
-## Capabilities
+## How It Works
+
+### 1. Load the Model
+When you first open Stratos Office, click **"Load Gemma 4"**. The app downloads the model (~1-2 GB) and caches it in your browser. This happens once — every visit after that is instant.
+
+### 2. Pick a Task
+Choose from five categories of tasks:
 
 | Category | Tasks |
 |---|---|
-| **Documents** | Document OCR, Receipt/Invoice parsing, Handwriting transcription, Table extraction, Form field extraction |
+| **Documents** | OCR, Receipt/Invoice parsing, Handwriting transcription, Table extraction, Form extraction |
 | **Visual** | Chart/graph data extraction, Screen/UI analysis |
 | **Audio** | Meeting transcription, Voice commands, Speech-to-text translation |
-| **Text** | Email drafting, Summarization, Code review, General text tasks |
-| **Research** | Web research with search + page content synthesis (optional, via MCP) |
+| **Text** | Email drafting, Summarization, Code review |
+| **Research** | Web research with live search and synthesis |
 
-## Key Features
+### 3. Provide Input
+Each task accepts the input type it needs:
+- **Text** — type your instructions directly
+- **Image** — upload a file (PNG, JPG, WebP), drag-and-drop, or capture with your webcam
+- **Audio** — upload a file (WebM, WAV, MP3) or record with your microphone
+- **PDF** — upload a PDF, which is rendered page-by-page for processing
 
-- **100% client-side** — no backend server, no API keys, no data leaves your device
-- **WebGPU accelerated** — runs on your GPU via the browser
-- **Multimodal** — accepts text, images (PNG, JPG, WebP), audio (WebM, WAV, MP3), and PDFs
-- **Task-based UI** — pick a task type, provide input, get structured output
-- **Task history** — track and revisit past tasks
-- **Export** — download results as TXT, JSON, or Markdown
-- **Offline mode** — once the model is cached, everything works without internet
+### 4. Get Results
+The model processes your input locally and streams the response back in real time. Results appear as formatted text, structured JSON, rendered markdown, or interactive tables. You can copy to clipboard or download as TXT, JSON, or Markdown.
 
-## Tech Stack
+### 5. Track & Export
+Every task is saved to your history. Search, revisit, or export past results at any time.
 
-- **Model**: `onnx-community/gemma-4-E2B-it-ONNX` (Gemma 4 2B, Q4 quantized)
-- **Runtime**: Transformers.js + ONNX Runtime Web on WebGPU
-- **Frontend**: Vite + React (swappable to any framework)
-- **Architecture**: Web Worker for inference, main thread for UI
-- **Optional**: TinyFish MCP for web search/fetch integration
+## Why Local?
+
+| | Cloud AI | Stratos Office |
+|---|---|---|
+| Data leaves your device | Yes | No |
+| API keys required | Yes | No |
+| Server needed | Yes | No |
+| Works offline (after first load) | No | Yes |
+| Per-request cost | Yes | Free |
+| Privacy | Depends on provider | Complete |
+
+## System Requirements
+
+- **Browser**: Chrome 113+ or Edge 113+ (WebGPU required)
+- **GPU**: Any modern GPU (integrated or discrete)
+- **RAM**: 4 GB+ recommended
+- **Storage**: ~2 GB for model cache
 
 ## Quick Start
 
@@ -41,58 +60,24 @@ npm run dev
 
 Open `http://127.0.0.1:5173/` in Chrome or Edge.
 
-## Browser Requirements
-
-- Chrome 113+ or Edge 113+ (WebGPU required)
-- ~2-4 GB VRAM available
-- 4+ GB RAM recommended
-
-## Project Structure
-
-```
-stratos-office/
-├── src/
-│   ├── main.jsx              # Entry point
-│   ├── App.jsx               # Main application UI
-│   ├── worker.js             # Web Worker: model loading + inference
-│   ├── taskRouter.js         # Task routing logic
-│   ├── outputParser.js       # JSON extraction from model output
-│   ├── fileHandler.js        # File upload utility
-│   ├── webcam.js             # Webcam capture
-│   ├── audioRecorder.js      # Microphone recording
-│   ├── mcpClient.js          # MCP protocol client (optional)
-│   ├── prompts/              # Prompt template library
-│   │   ├── index.js
-│   │   ├── ocr.js
-│   │   ├── audio.js
-│   │   ├── visual.js
-│   │   ├── text.js
-│   │   └── research.js
-│   └── components/           # UI components
-│       ├── TaskSelector.jsx
-│       ├── InputArea.jsx
-│       ├── OutputDisplay.jsx
-│       ├── TaskHistory.jsx
-│       └── Settings.jsx
-├── public/
-│   ├── stratos-logo-white.png
-│   └── stratos-favicon.png
-├── index.html
-├── package.json
-└── vite.config.js
-```
-
 ## Documentation
 
-- [ARCHITECTURE.md](./ARCHITECTURE.md) — Full technical architecture
-- [USER_GUIDE.md](./USER_GUIDE.md) — How to use each task
-- [CONTRIBUTING.md](./CONTRIBUTING.md) — How to add new tasks
-- [DESIGN.md](./DESIGN.md) — Design system and UI guidelines
-- [task_list.md](./task_list.md) — Development task list
+- [Architecture](./docs/ARCHITECTURE.md) — Technical architecture
+- [User Guide](./docs/USER_GUIDE.md) — How to use each task
+- [Design System](./docs/DESIGN.md) — UI guidelines and design tokens
+- [Contributing](./docs/CONTRIBUTING.md) — How to add new tasks
+- [Task List](./docs/task_list.md) — Development roadmap
 
 ## Privacy
 
-All inference runs locally. No data is sent to external servers. The model files are downloaded once from HuggingFace and cached in your browser. Optional web research features (via MCP) do send search queries externally — a local-only mode is always available.
+All inference runs locally on your device. No prompts, documents, images, or audio are sent to any external server. The model files are downloaded once from HuggingFace and cached in your browser. Optional web research features send search queries externally — toggle **Offline Mode** in Settings to disable them entirely.
+
+## Tech Stack
+
+- **Model**: Gemma 4 E2B (2B parameters, Q4 quantized, ONNX format)
+- **Runtime**: Transformers.js + ONNX Runtime Web on WebGPU
+- **Frontend**: Vite + React
+- **Architecture**: Web Worker for inference, main thread for UI
 
 ## License
 
