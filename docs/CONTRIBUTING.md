@@ -6,119 +6,122 @@
 
 ## Adding a New Task
 
-### Step 1: Define the Task Type
+### Step 1: Add the Task Type
 
-Add your task type to `src/taskRouter.js`:
+In `src/types/index.ts`, add your task type to the `TaskType` union:
 
-```js
-const TASK_TYPES = {
+```typescript
+export type TaskType =
   // ... existing types
-  my_new_task: "my_new_task",
-};
+  | 'my_new_task';
 ```
 
 ### Step 2: Create the Prompt Template
 
-Add a prompt function in the appropriate `src/prompts/` file, or create a new file:
+Add a prompt string or factory function in the appropriate `src/prompts/` category file:
 
-```js
-// src/prompts/myCategory.js
-export function myNewTask(context = "") {
-  return `Your prompt template here. ${context}`;
+```typescript
+// src/prompts/text.ts
+export const myNewTask = (options?: { tone?: string }) =>
+  `Your prompt template here. ${options?.tone ? `Use a ${options.tone} tone.` : ''}`;
+```
+
+Export it from `src/prompts/index.ts`:
+
+```typescript
+import { myNewTask } from './text.ts';
+
+export function getPrompt(taskType: TaskType, options?: PromptOptions): string {
+  switch (taskType) {
+    // ... existing cases
+    case 'my_new_task': return myNewTask(options);
+    default: throw new Error(`Unknown task type: ${taskType}`);
+  }
 }
 ```
 
-Export it from `src/prompts/index.js`:
+### Step 3: Add the Task Config
 
-```js
-import * as myCategory from "./myCategory.js";
+In `src/taskRouter.ts`, add an entry to `TASK_CONFIGS`:
 
-const promptTemplates = {
-  // ... existing categories
-  myCategory: {
-    myNewTask: myCategory.myNewTask,
-  },
-};
-
-const taskTypeToPromptMap = {
-  // ... existing mappings
-  my_new_task: "myNewTask",
-};
+```typescript
+my_new_task: {
+  taskType: 'my_new_task',
+  category: 'text',
+  label: 'My New Task',
+  description: 'What this task does in one sentence.',
+  icon: 'edit_note',                  // Material Symbols icon name
+  max_new_tokens: 1024,
+  requiresImage: false,
+  requiresAudio: false,
+  requiresPDF: false,
+  requiresText: true,
+  supportsWebcam: false,
+  enableThinkingByDefault: false,
+  supportsThinkingMode: true,
+  outputFormat: 'markdown',
+  twoPassPipeline: false,
+  requiresPrivacyNotice: false,
+  requiresDisclaimer: false,
+},
 ```
 
-### Step 3: Add Task Configuration
+### Step 4: Add a Structured Output Type (if needed)
 
-Add your task config in `src/taskRouter.js`:
+If your task returns structured JSON, add an interface to `src/types/index.ts`:
 
-```js
-function getTaskConfig(taskType) {
-  const configs = {
-    // ... existing configs
-    my_new_task: {
-      max_new_tokens: 1024,
-      requiresImage: false,
-      requiresAudio: false,
-    },
-  };
-  return configs[taskType] || configs.text_task;
+```typescript
+export interface MyNewTaskResult {
+  field_one: string;
+  field_two: string[];
 }
 ```
 
-### Step 4: Handle the Task in the Worker
+### Step 5: Wire the UI
 
-The worker already supports the `"task"` message type. Your task will be routed automatically based on the prompt template. If your task needs special input processing (e.g., custom image preprocessing), add it to the worker's `runTask` function.
+The task will automatically appear in the sidebar under its category. The `InputPanel` and `OutputPanel` render based on `TaskConfig` flags — no additional wiring needed for standard input/output patterns.
 
-### Step 5: Add UI Support
+For custom output rendering (e.g., a specialized view like `DiffView` or `BoundingBoxCanvas`), add a case to the appropriate category workspace component in `src/components/tasks/`.
 
-Add your task to the `TaskSelector` component:
+### Step 6: Test
 
-```jsx
-// src/components/TaskSelector.jsx
-const taskGroups = [
-  {
-    category: "My Category",
-    tasks: [
-      {
-        type: "my_new_task",
-        label: "My New Task",
-        description: "Description of what this task does",
-        icon: "icon-name",
-      },
-    ],
-  },
-  // ... existing groups
-];
+```bash
+npm run test
 ```
 
-### Step 6: Test Your Task
-
-1. Run the dev server: `npm run dev`
-2. Select your new task type
-3. Provide appropriate input
-4. Verify the output matches expectations
+Verify:
+- `getPrompt('my_new_task')` returns a non-empty string
+- `getTaskConfig('my_new_task')` returns the correct config
+- `getTokenBudget('my_new_task')` returns a value > 0 and ≤ 2048
+- The task appears in the sidebar and the workspace renders correctly
 
 ---
 
 ## Project Structure
 
 ```
-stratos-office/
-├── src/
-│   ├── main.jsx              # Entry point
-│   ├── App.jsx               # Main application
-│   ├── worker.js             # Web Worker (model + inference)
-│   ├── taskRouter.js         # Task routing + history
-│   ├── outputParser.js       # JSON extraction
-│   ├── fileHandler.js        # File upload
-│   ├── webcam.js             # Webcam capture
-│   ├── audioRecorder.js      # Audio recording
-│   ├── mcpClient.js          # MCP client (optional)
-│   ├── prompts/              # Prompt templates
-│   └── components/           # UI components
-├── public/                   # Static assets
-├── index.html
-├── package.json
-└── vite.config.js
+src/
+├── types/index.ts          # All TypeScript types — start here
+├── prompts/                # Prompt templates by category
+├── taskRouter.ts           # Task configs + message builder
+├── outputParser.ts         # JSON/text extraction (pure module)
+├── fileHandler.ts          # File validation + PDF extraction
+├── audioRecorder.ts        # MediaRecorder + PCM conversion
+├── webcamCapture.ts        # Camera capture
+├── mcpClient.ts            # MCP search/fetch
+├── historyStore.ts         # IndexedDB history
+├── settingsStore.ts        # localStorage settings
+├── context/
+│   ├── ModelContext.tsx    # Model lifecycle state
+│   └── TaskContext.tsx     # Task state + lifecycle
+├── components/
+│   ├── layout/             # TopBar, Sidebar
+│   ├── pages/              # LandingPage, LoadingPage, DashboardPage
+│   ├── workspace/          # TaskWorkspace, InputPanel, OutputPanel, StreamingOutput
+│   ├── tasks/              # Category workspace components
+│   ├── drawers/            # HistoryDrawer, SettingsDrawer
+│   └── ui/                 # Primitives: FileUploadZone, MarkdownRenderer, etc.
+└── test/                   # Property-based tests
 ```
 
 ---
@@ -126,18 +129,17 @@ stratos-office/
 ## Development Setup
 
 ```bash
-# Clone the repository
 git clone <repo-url>
 cd stratos-office
-
-# Install dependencies
 npm install
-
-# Start dev server
 npm run dev
+```
 
-# Build for production
-npm run build
+Open `http://127.0.0.1:5173/` in Chrome 113+ or Edge 113+ (WebGPU required).
+
+```bash
+npm run build    # Production build
+npm run test     # Run tests (Vitest)
 ```
 
 ---
@@ -145,124 +147,99 @@ npm run build
 ## Code Conventions
 
 ### File Naming
-- JavaScript: `camelCase.js` (utilities, modules)
-- React components: `PascalCase.jsx`
-- Prompt files: `lowercase.js` in `prompts/`
+- TypeScript modules: `camelCase.ts`
+- React components: `PascalCase.tsx`
+- Prompt files: `camelCase.ts` in `src/prompts/`
+- Test files: `camelCase.test.ts` in `src/test/`
 
-### Imports
-- Use ES module imports
-- Group imports: external libraries, internal modules, local files
-- Use named exports (avoid default exports)
+### TypeScript
+- Use named exports (avoid default exports for utilities)
+- All public functions must have explicit return types
+- Use `unknown` instead of `any`
+- `outputParser.ts` must have zero browser API dependencies
 
 ### Worker Communication
-- Always use the defined message protocol
-- Include `taskId` for task-related messages
-- Handle errors gracefully and post error status
+- Always use the defined message protocol in `types/index.ts`
+- Include `taskId` for all task-related messages
+- Handle errors gracefully — always post an error status rather than throwing
 
 ### Prompt Templates
-- Return a string (the prompt text)
-- Accept an `options` object for customization
-- Keep prompts clear and specific
-- Specify output format when structured data is expected
+- Return a string
+- Accept an `options` object for customization (language, tone, etc.)
+- Specify the exact output format (JSON schema, Markdown structure) in the prompt
+- Keep prompts clear and specific — the model should not need to guess the format
+
+### Accessibility
+- All icon-only buttons must have `aria-label`
+- Dynamic content (streaming output, errors) must use `aria-live="polite"`
+- All Framer Motion animations must check `useReducedMotion()`
 
 ---
 
 ## Adding a New Input Type
 
-### Image Formats
-
-Supported formats are defined in `src/fileHandler.js`:
-
-```js
-const SUPPORTED_IMAGE_TYPES = [
-  "image/png",
-  "image/jpeg",
-  "image/webp",
-  "image/gif",
-  "image/bmp",
-];
-```
-
-### Audio Formats
-
-```js
-const SUPPORTED_AUDIO_TYPES = [
-  "audio/webm",
-  "audio/wav",
-  "audio/mp3",
-  "audio/ogg",
-  "audio/m4a",
-];
-```
-
-To add a new format, add its MIME type to the appropriate array.
+Accepted MIME types are defined per task in `src/fileHandler.ts`. To add a new format, add its MIME type to the accepted set for the relevant task types in `fileHandler.ts` and update the `FileUploadZone` label text.
 
 ---
 
-## Adding a New Output Format
+## Adding a New Output Renderer
 
-The `OutputDisplay` component handles different output types. To add a new display format:
-
-1. Add a new renderer in `src/components/OutputDisplay.jsx`
-2. Handle the format detection based on the output content type
-3. Add an export option for the new format
+1. Create a new component in `src/components/ui/`
+2. Add a new `OutputFormat` value to `types/index.ts` if needed
+3. Add a case in `OutputPanel.tsx` to render the new component
+4. Add the `outputFormat` to the relevant `TaskConfig` entries in `taskRouter.ts`
 
 ---
 
 ## Testing
 
+### Running Tests
+
+```bash
+npm run test          # Run all tests
+npm run test --watch  # Watch mode
+```
+
+### Property-Based Tests
+
+The test suite covers 15 correctness properties. When adding a new module, add property-based tests for:
+- Round-trip properties (serialize → deserialize → equals original)
+- Invariants (output always satisfies a constraint)
+- Error conditions (invalid input never throws, always returns error object)
+
 ### Manual Testing Checklist
 
-- [ ] Task routes correctly in taskRouter
-- [ ] Prompt template returns appropriate text
-- [ ] Worker processes the task without errors
-- [ ] Output is displayed correctly in the UI
-- [ ] Export functionality works
+- [ ] Task appears in sidebar under correct category
+- [ ] Task workspace renders correct input controls
+- [ ] Submitting the task streams output
+- [ ] Output renders in the correct format (markdown/JSON/HTML/etc.)
+- [ ] Export works for all formats (TXT, JSON, MD, HTML)
+- [ ] Task is saved to history
+- [ ] History entry can be clicked to restore output
 - [ ] Error handling works (invalid input, network errors)
-- [ ] Task history records the task correctly
-
-### Edge Cases to Test
-
-- Empty input
-- Oversized files (>50MB)
-- Unsupported file formats
-- Network disconnection during model load
-- GPU memory exhaustion
-- Concurrent task cancellation
-
----
-
-## Pull Request Process
-
-1. Create a feature branch: `git checkout -b feature/my-new-task`
-2. Make your changes
-3. Test thoroughly
-4. Commit with a descriptive message
-5. Push and create a pull request
-6. Request review from a team member
+- [ ] Thinking mode toggle works if supported
 
 ---
 
 ## Architecture Decisions
 
 ### Why Web Workers?
+Model inference blocks the main thread for seconds at a time. Web Workers run inference in a background thread, keeping the UI fully responsive during generation.
 
-Model inference is computationally intensive and would block the main thread. Web Workers run inference in a background thread, keeping the UI responsive.
+### Why a Pure outputParser?
+`outputParser.ts` has no browser API dependencies, making it fully unit-testable in Node.js without a browser environment. This is critical for property-based testing.
 
-### Why Prompt Templates?
+### Why IndexedDB for history?
+IndexedDB has a much larger quota than localStorage and is binary-safe. The 200-entry FIFO limit keeps storage bounded.
 
-Separating prompts from the task logic makes it easy to:
-- Iterate on prompt quality without code changes
-- A/B test different prompts
-- Localize prompts for different languages
-- Share prompts across projects
+### Why Two-Pass for Audio Tasks?
+`meeting_minutes` and `voice_to_email` need to first transcribe audio (audio → text), then generate structured output (text → JSON). Doing both in one pass produces worse results than two focused passes.
 
 ### Why Task-Based Architecture?
-
 A task-based approach (vs. free-form chat) provides:
-- Clear user intent (the model knows what to do)
-- Consistent output formats
-- Better UX with task-specific UI elements
+- Clear user intent — the model knows exactly what to produce
+- Consistent, typed output formats
+- Task-specific UI elements (email preview, diff view, bounding boxes)
 - Easier testing and validation
 
 ---
@@ -270,6 +247,9 @@ A task-based approach (vs. free-form chat) provides:
 ## Resources
 
 - [ARCHITECTURE.md](./ARCHITECTURE.md) — Full technical architecture
+- [DESIGN.md](./DESIGN.md) — Design system and component specs
+- [DEVELOPMENT_PLAN.md](./DEVELOPMENT_PLAN.md) — Implementation roadmap
 - [USER_GUIDE.md](./USER_GUIDE.md) — User-facing documentation
-- [DESIGN.md](./DESIGN.md) — Design system
-- [task_list.md](./task_list.md) — Development roadmap
+- [Spec: Requirements](./../.kiro/specs/stratos-office-full-suite/requirements.md)
+- [Spec: Design](./../.kiro/specs/stratos-office-full-suite/design.md)
+- [Spec: Tasks](./../.kiro/specs/stratos-office-full-suite/tasks.md)
