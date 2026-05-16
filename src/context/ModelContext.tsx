@@ -12,6 +12,9 @@ const initialState: ModelState = {
   tps: null,
   numTokens: null,
   isGenerating: false,
+  gpuAdapter: null,
+  gpuBackend: null,
+  shaderF16: null,
 };
 
 interface ModelContextValue {
@@ -49,12 +52,39 @@ export function ModelProvider({ children }: { children: ReactNode }) {
       const { status, data, progress, output, numTokens, tps } = event.data;
 
       switch (status) {
-        case "check":
+        case "check": {
+          const msg = event.data;
+          const supported = Boolean(msg.supported);
+          const reason = typeof msg.reason === "string" ? msg.reason : null;
+          if (!supported) {
+            setState((prev) => ({
+              ...prev,
+              stage: "unsupported",
+              error: reason || "WebGPU is not supported in this browser",
+            }));
+            break;
+          }
+          const shaderF16 = Boolean(msg.shaderF16);
+          if (!shaderF16) {
+            setState((prev) => ({
+              ...prev,
+              stage: "unsupported",
+              error: "GPU does not support shader-f16 (required for Gemma 4 fp16 inference). Try Chrome on a discrete GPU.",
+              gpuAdapter: typeof msg.adapter === "string" ? msg.adapter : null,
+              gpuBackend: typeof msg.backend === "string" ? msg.backend : null,
+              shaderF16: false,
+            }));
+            break;
+          }
           setState((prev) => ({
             ...prev,
-            stage: (event.data as { supported: boolean }).supported ? "idle" : "unsupported",
+            stage: "idle",
+            gpuAdapter: typeof msg.adapter === "string" ? msg.adapter : null,
+            gpuBackend: typeof msg.backend === "string" ? msg.backend : null,
+            shaderF16: true,
           }));
           break;
+        }
 
         case "init":
           setState((prev) => ({
