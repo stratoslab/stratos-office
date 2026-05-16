@@ -20,7 +20,7 @@ function AppContent() {
 
   return (
     <div
-      className="flex flex-col min-h-screen relative overflow-hidden"
+      className="flex flex-col h-screen relative overflow-hidden"
       style={{ background: "var(--background)", color: "var(--on-background)" }}
     >
       {isDashboard && (
