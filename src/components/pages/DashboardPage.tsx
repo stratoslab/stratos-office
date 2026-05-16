@@ -11,8 +11,15 @@ import AudioWorkspace from '../tasks/AudioWorkspace';
 import TextWorkspace from '../tasks/TextWorkspace';
 import ResearchWorkspace from '../tasks/ResearchWorkspace';
 import PrivacyWorkspace from '../tasks/PrivacyWorkspace';
-import PipelineWorkspace from '../pipelines/PipelineWorkspace';
 import PipelineSelector from '../pipelines/PipelineSelector';
+import DueDiligenceWorkspace from '../pipelines/DueDiligenceWorkspace';
+import MeetingIntelligenceWorkspace from '../pipelines/MeetingIntelligenceWorkspace';
+import ProductDiscoveryWorkspace from '../pipelines/ProductDiscoveryWorkspace';
+import ComplianceAuditorWorkspace from '../pipelines/ComplianceAuditorWorkspace';
+import ResearchSynthesisWorkspace from '../pipelines/ResearchSynthesisWorkspace';
+import NegotiationPrepWorkspace from '../pipelines/NegotiationPrepWorkspace';
+import IncidentResponseWorkspace from '../pipelines/IncidentResponseWorkspace';
+import CustomerIntelligenceWorkspace from '../pipelines/CustomerIntelligenceWorkspace';
 
 const quickStartTasks: Array<{ taskType: keyof typeof TASK_CONFIGS; icon: string; title: string; description: string; tags: string[] }> = [
   { taskType: 'ocr', icon: 'document_scanner', title: 'Document OCR', description: 'Extract all text from images and scans.', tags: ['Documents', 'OCR'] },
@@ -41,7 +48,17 @@ export default function DashboardPage() {
   };
 
   if (activeTemplate && !showPipelineSelector) {
-    return <PipelineWorkspace template={activeTemplate} />;
+    switch (activeTemplate.id) {
+      case 'due-diligence': return <DueDiligenceWorkspace template={activeTemplate} />;
+      case 'meeting-intelligence': return <MeetingIntelligenceWorkspace template={activeTemplate} />;
+      case 'product-discovery': return <ProductDiscoveryWorkspace template={activeTemplate} />;
+      case 'compliance-auditor': return <ComplianceAuditorWorkspace template={activeTemplate} />;
+      case 'research-synthesis': return <ResearchSynthesisWorkspace template={activeTemplate} />;
+      case 'negotiation-prep': return <NegotiationPrepWorkspace template={activeTemplate} />;
+      case 'incident-response': return <IncidentResponseWorkspace template={activeTemplate} />;
+      case 'customer-intelligence': return <CustomerIntelligenceWorkspace template={activeTemplate} />;
+      default: return null;
+    }
   }
 
   if (showPipelineSelector) {
