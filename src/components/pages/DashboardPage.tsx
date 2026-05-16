@@ -15,7 +15,7 @@ const quickStartTasks: Array<{ taskType: keyof typeof TASK_CONFIGS; icon: string
   { taskType: 'transcription', icon: 'transcribe', title: 'Meeting Transcription', description: 'Transcribe audio or video to text.', tags: ['Audio', 'Video', 'Live'] },
   { taskType: 'email_draft', icon: 'mail', title: 'Email Draft', description: 'Compose professional emails from descriptions.', tags: ['Text', 'NLP'] },
   { taskType: 'chart_extract', icon: 'monitoring', title: 'Chart Extract', description: 'Extract data from chart and graph images.', tags: ['Visual', 'Data'] },
-  { taskType: 'research', icon: 'search', title: 'Web Research', description: 'Synthesized answers with live web citations.', tags: ['Research', 'MCP'] },
+  { taskType: 'research', icon: 'search', title: 'Web Research', description: 'Comprehensive answers from model knowledge.', tags: ['Research', 'AI'] },
   { taskType: 'contract_analyzer', icon: 'gavel', title: 'Contract Analyzer', description: 'Analyze contracts for risks and key clauses.', tags: ['Documents', 'Legal'] },
   { taskType: 'code_review', icon: 'code', title: 'Code Review', description: 'Review code with severity-rated suggestions.', tags: ['Text', 'Dev'] },
   { taskType: 'medical_summarizer', icon: 'local_hospital', title: 'Medical Summarizer', description: 'Plain-language summaries of medical records.', tags: ['Privacy', 'Health'] },

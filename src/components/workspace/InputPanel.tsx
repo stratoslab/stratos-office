@@ -131,7 +131,10 @@ export default function InputPanel({ taskType }: InputPanelProps) {
   const isSubmitDisabled = isDisabled || isResearchOffline ||
     (config.requiresAudio && isRecording) ||
     (config.requiresAudio && !taskInput.audioData) ||
-    (config.requiresText && !taskInput.text) ||
+    // PDF+text tasks (pdf_qa, deep_doc_qa): need question input
+    (config.requiresText && config.requiresPDF && !taskInput.question) ||
+    // Text-only tasks: need text input
+    (config.requiresText && !config.requiresPDF && !taskInput.text) ||
     // Mixed image+PDF tasks: need either image or PDF text
     (config.requiresImage && config.requiresPDF && !taskInput.imageDataUrl && !taskInput.pdfText) ||
     // Image-only tasks: need imageDataUrl
