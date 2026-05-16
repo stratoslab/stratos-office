@@ -1,7 +1,15 @@
 import { TaskType } from './types';
 
 const IMAGE_MIMES = new Set(['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/gif', 'image/bmp']);
-const AUDIO_MIMES = new Set(['audio/webm', 'audio/wav', 'audio/mp3', 'audio/ogg', 'audio/m4a', 'audio/mpeg']);
+const AUDIO_MIMES = new Set([
+  'audio/webm', 'audio/wav', 'audio/x-wav', 'audio/mp3', 'audio/mpeg',
+  'audio/ogg', 'audio/opus', 'audio/x-m4a', 'audio/m4a', 'audio/mp4',
+  'audio/aac', 'audio/x-aac', 'audio/flac', 'audio/x-flac',
+]);
+const VIDEO_MIMES = new Set([
+  'video/mp4', 'video/webm', 'video/quicktime', 'video/x-m4v',
+  'video/x-msvideo', 'video/x-matroska', 'video/avi',
+]);
 const PDF_MIMES = new Set(['application/pdf']);
 const TEXT_MIMES = new Set(['text/plain', 'text/markdown', 'text/html', 'text/csv']);
 
@@ -29,7 +37,7 @@ function getAcceptedMimes(taskType: TaskType): Set<string> {
     case 'voice_to_email':
     case 'multilingual_transcription':
     case 'interview_transcriber':
-      return AUDIO_MIMES;
+      return new Set([...AUDIO_MIMES, ...VIDEO_MIMES]);
     case 'pdf_qa':
     case 'contract_analyzer':
     case 'redline_comparison':
@@ -52,9 +60,13 @@ function getAcceptedMimes(taskType: TaskType): Set<string> {
 
 function getMimeLabel(mimes: Set<string>): string {
   if (mimes === IMAGE_MIMES) return 'PNG, JPG, JPEG, WebP, GIF, BMP';
-  if (mimes === AUDIO_MIMES) return 'WebM, WAV, MP3, OGG, M4A';
+  if (mimes === AUDIO_MIMES) return 'WebM, WAV, MP3, OGG, M4A, AAC, FLAC';
   if (mimes === PDF_MIMES) return 'PDF';
   if (mimes === TEXT_MIMES) return 'TXT, Markdown, HTML, CSV';
+  // Audio + video combined
+  if ([...AUDIO_MIMES, ...VIDEO_MIMES].every(m => mimes.has(m))) {
+    return 'Audio: WebM, WAV, MP3, OGG, M4A, AAC, FLAC | Video: MP4, WebM, MOV, AVI, MKV';
+  }
   return Array.from(mimes).join(', ');
 }
 
@@ -85,6 +97,36 @@ export async function generatePreview(file: File): Promise<string | null> {
     return readAsDataURL(file);
   }
   return null;
+}
+
+/**
+ * Extract audio from a video or audio file as a 16kHz mono Float32Array.
+ * Uses the browser's AudioContext to decode any format the browser supports
+ * (MP4, WebM, MOV, AVI, WAV, MP3, M4A, etc.) and resamples to 16kHz mono.
+ */
+export async function extractAudio(file: File): Promise<Float32Array> {
+  const arrayBuffer = await file.arrayBuffer();
+  const audioCtx = new AudioContext({ sampleRate: 16000 });
+  try {
+    const audioBuffer = await audioCtx.decodeAudioData(arrayBuffer);
+    // Convert to mono: average all channels
+    let pcm: Float32Array;
+    if (audioBuffer.numberOfChannels === 1) {
+      pcm = audioBuffer.getChannelData(0);
+    } else {
+      const length = audioBuffer.length;
+      pcm = new Float32Array(length);
+      for (let ch = 0; ch < audioBuffer.numberOfChannels; ch++) {
+        const channelData = audioBuffer.getChannelData(ch);
+        for (let i = 0; i < length; i++) {
+          pcm[i] += channelData[i] / audioBuffer.numberOfChannels;
+        }
+      }
+    }
+    return pcm;
+  } finally {
+    await audioCtx.close();
+  }
 }
 
 export function estimateTokens(text: string): number {

@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import { TaskType } from '../../types';
 import { useTask } from '../../context/TaskContext';
 import { getTaskConfig } from '../../taskRouter';
-import { estimateTokens, extractPDFText } from '../../fileHandler';
+import { estimateTokens, extractPDFText, extractAudio } from '../../fileHandler';
 import FileUploadZone from '../ui/FileUploadZone';
 import AudioRecorderWidget from '../ui/AudioRecorderWidget';
 import WebcamCaptureComponent from '../ui/WebcamCapture';
@@ -12,6 +12,11 @@ import TokenEstimateDisplay from '../ui/TokenEstimateDisplay';
 import ContextLimitWarning from '../ui/ContextLimitWarning';
 import PrivacyNotice from '../ui/PrivacyNotice';
 import { loadSettings } from '../../settingsStore';
+
+const VIDEO_MIMES = new Set([
+  'video/mp4', 'video/webm', 'video/quicktime', 'video/x-m4v',
+  'video/x-msvideo', 'video/x-matroska', 'video/avi',
+]);
 
 interface InputPanelProps {
   taskType: TaskType;
@@ -42,7 +47,18 @@ export default function InputPanel({ taskType }: InputPanelProps) {
         setError('Failed to extract PDF text');
       }
     }
-  }, [config.requiresPDF, setInput]);
+
+    if (config.requiresAudio && VIDEO_MIMES.has(file.type)) {
+      try {
+        setError('Extracting audio from video…');
+        const pcm = await extractAudio(file);
+        setInput({ audioData: pcm });
+        setError(null);
+      } catch {
+        setError('Failed to extract audio from video. The file may not contain an audio track.');
+      }
+    }
+  }, [config.requiresPDF, config.requiresAudio, setInput]);
 
   const handleAudio = useCallback((pcm: Float32Array) => {
     setInput({ audioData: pcm });

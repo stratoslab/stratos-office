@@ -12,7 +12,7 @@ import PrivacyWorkspace from '../tasks/PrivacyWorkspace';
 const quickStartTasks: Array<{ taskType: keyof typeof TASK_CONFIGS; icon: string; title: string; description: string; tags: string[] }> = [
   { taskType: 'ocr', icon: 'document_scanner', title: 'Document OCR', description: 'Extract all text from images and scans.', tags: ['Documents', 'OCR'] },
   { taskType: 'document_parse', icon: 'receipt_long', title: 'Receipt Parser', description: 'Extract structured data from receipts and invoices.', tags: ['Documents', 'Financial'] },
-  { taskType: 'transcription', icon: 'transcribe', title: 'Meeting Transcription', description: 'Convert meeting audio to formatted transcripts.', tags: ['Audio', 'Live'] },
+  { taskType: 'transcription', icon: 'transcribe', title: 'Meeting Transcription', description: 'Transcribe audio or video to text.', tags: ['Audio', 'Video', 'Live'] },
   { taskType: 'email_draft', icon: 'mail', title: 'Email Draft', description: 'Compose professional emails from descriptions.', tags: ['Text', 'NLP'] },
   { taskType: 'chart_extract', icon: 'monitoring', title: 'Chart Extract', description: 'Extract data from chart and graph images.', tags: ['Visual', 'Data'] },
   { taskType: 'research', icon: 'search', title: 'Web Research', description: 'Synthesized answers with live web citations.', tags: ['Research', 'MCP'] },
