@@ -29,7 +29,7 @@ function AppContent() {
         />
       )}
 
-      <div className={`flex flex-1 h-screen overflow-hidden ${isDashboard ? "pt-16" : ""}`}>
+      <div className={`flex flex-1 overflow-hidden ${isDashboard ? "pt-16" : ""}`}>
         {isDashboard && (
           <Sidebar
             onOpenHistory={() => setHistoryOpen(true)}

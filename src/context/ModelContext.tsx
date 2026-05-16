@@ -15,12 +15,15 @@ const initialState: ModelState = {
   gpuAdapter: null,
   gpuBackend: null,
   shaderF16: null,
+  downloadRetry: null,
+  downloadError: null,
 };
 
 interface ModelContextValue {
   state: ModelState;
   workerRef: React.MutableRefObject<Worker | null>;
   loadModel: () => void;
+  resumeDownload: () => void;
   generate: (messages: Array<{ role: string; content: string | Array<{ type: string; [key: string]: unknown }> }>, options?: { enableThinking?: boolean; maxNewTokens?: number }) => void;
   interrupt: () => void;
   reset: () => void;
@@ -150,6 +153,33 @@ export function ModelProvider({ children }: { children: ReactNode }) {
             isGenerating: false,
           }));
           break;
+
+        case "download_retry":
+          setState((prev) => ({
+            ...prev,
+            downloadRetry: {
+              active: true,
+              attempt: typeof event.data.attempt === "number" ? event.data.attempt : 0,
+              maxRetries: typeof event.data.maxRetries === "number" ? event.data.maxRetries : 5,
+              delay: typeof event.data.delay === "number" ? event.data.delay : 2,
+              url: typeof event.data.url === "string" ? event.data.url : "",
+            },
+            downloadError: null,
+          }));
+          break;
+
+        case "download_error":
+          setState((prev) => ({
+            ...prev,
+            stage: "error",
+            error: typeof data === "string" ? data : "Download failed after all retries",
+            downloadRetry: null,
+            downloadError: {
+              message: typeof data === "string" ? data : "Download failed",
+              cachedPercent: typeof event.data.cachedPercent === "number" ? event.data.cachedPercent : 0,
+            },
+          }));
+          break;
       }
     });
 
@@ -163,7 +193,21 @@ export function ModelProvider({ children }: { children: ReactNode }) {
 
   const loadModel = useCallback(() => {
     startTimeRef.current = performance.now();
-    setState((prev) => ({ ...prev, stage: "downloading", progress: 0, error: null }));
+    setState((prev) => ({ ...prev, stage: "downloading", progress: 0, error: null, downloadRetry: null, downloadError: null }));
+    workerRef.current?.postMessage({ type: "load" });
+  }, []);
+
+  const resumeDownload = useCallback(() => {
+    // Transformers.js caches partial downloads, so re-calling load resumes
+    setState((prev) => ({
+      ...prev,
+      stage: "downloading",
+      error: null,
+      downloadRetry: null,
+      downloadError: null,
+      progress: prev.downloadError?.cachedPercent ?? 0,
+      currentFile: `Resuming from ${prev.downloadError?.cachedPercent ?? 0}%...`,
+    }));
     workerRef.current?.postMessage({ type: "load" });
   }, []);
 
@@ -203,6 +247,7 @@ export function ModelProvider({ children }: { children: ReactNode }) {
         state,
         workerRef,
         loadModel,
+        resumeDownload,
         generate,
         interrupt,
         reset,

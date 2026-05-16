@@ -21,6 +21,8 @@ export interface ModelState {
   gpuAdapter: string | null;
   gpuBackend: string | null;
   shaderF16: boolean | null;
+  downloadRetry: { active: boolean; attempt: number; maxRetries: number; delay: number; url: string } | null;
+  downloadError: { message: string; cachedPercent: number } | null;
 }
 
 export type TaskType =
@@ -275,7 +277,8 @@ export interface TaskWorkerMessage {
 export interface WorkerResponse {
   status: 'check' | 'loading' | 'init' | 'progress' | 'ready' |
           'start' | 'update' | 'complete' | 'error' |
-          'task_start' | 'task_update' | 'task_complete' | 'task_pass1_complete' | 'task_error';
+          'task_start' | 'task_update' | 'task_complete' | 'task_pass1_complete' | 'task_error' |
+          'download_retry' | 'download_error';
   data?: unknown;
   progress?: number;
   output?: string;
@@ -287,4 +290,9 @@ export interface WorkerResponse {
   adapter?: string;
   backend?: string;
   reason?: string;
+  url?: string;
+  attempt?: number;
+  maxRetries?: number;
+  delay?: number;
+  cachedPercent?: number;
 }
