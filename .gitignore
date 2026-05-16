@@ -46,3 +46,4 @@ stitch_stratos_office_ai_ui/
 # Build specs and docs
 .kiro/
 docs/
+specs/
