@@ -9,6 +9,7 @@ import DiffView from '../ui/DiffView';
 import ExportButton from '../ui/ExportButton';
 import DisclaimerBanner from '../ui/DisclaimerBanner';
 import { getTaskConfig } from '../../taskRouter';
+import MaterialIcon from '../ui/MaterialIcon';
 
 interface OutputPanelProps {
   taskType: TaskType;
@@ -18,6 +19,7 @@ export default function OutputPanel({ taskType }: OutputPanelProps) {
   const { streamingOutput, finalOutput, parsedOutput, lifecycle, tps, cancelTask, taskInput } = useTask();
   const config = getTaskConfig(taskType);
   const isGenerating = lifecycle === 'generating';
+  const isSubmitting = lifecycle === 'submitting';
   const output = finalOutput || streamingOutput;
 
   const handleCopy = () => {
@@ -47,6 +49,23 @@ export default function OutputPanel({ taskType }: OutputPanelProps) {
 
     return <MarkdownRenderer content={output} />;
   };
+
+  if (isSubmitting) {
+    return (
+      <div className="bg-[#0A2540]/50 rounded-xl p-4 md:p-6 min-h-[200px] flex flex-col items-center justify-center gap-3">
+        <div className="relative">
+          <svg className="animate-spin h-8 w-8" viewBox="0 0 24 24" fill="none">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" style={{ color: 'rgba(0,212,255,0.2)' }} />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" style={{ color: 'var(--primary-fixed-dim)' }} />
+          </svg>
+        </div>
+        <p className="text-sm font-medium" style={{ color: 'var(--on-surface)' }}>Processing...</p>
+        <p className="text-xs" style={{ color: 'var(--outline)' }}>
+          {taskInput.file?.type === 'application/pdf' ? 'Extracting text from PDF' : 'Preparing task for model'}
+        </p>
+      </div>
+    );
+  }
 
   if (!output && !isGenerating) {
     return (
