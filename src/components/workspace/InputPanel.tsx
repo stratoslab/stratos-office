@@ -35,8 +35,12 @@ export default function InputPanel({ taskType }: InputPanelProps) {
   const [error, setError] = useState<string | null>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [pdfPageCount, setPdfPageCount] = useState<number>(0);
+  const [pdfPageCount2, setPdfPageCount2] = useState<number>(0);
   const [pdfRange, setPdfRange] = useState<{ start: number; end: number }>({ start: 1, end: 50 });
   const [pdfTokenEstimate, setPdfTokenEstimate] = useState(0);
+  const [pdfTokenEstimate2, setPdfTokenEstimate2] = useState(0);
+
+  const isRedline = taskType === 'redline_comparison';
 
   const handleFile = useCallback(async (file: File, dataUrl: string) => {
     setInput({ file });
@@ -91,6 +95,26 @@ export default function InputPanel({ taskType }: InputPanelProps) {
     }
   }, [config.requiresPDF, config.requiresAudio, config.requiresText, setInput]);
 
+  const handleFile2 = useCallback(async (file: File, dataUrl: string) => {
+    setInput({ secondFile: file });
+    setError(null);
+
+    // Extract text from second PDF file (redline comparison)
+    if (file.type === 'application/pdf') {
+      try {
+        const result = await extractPDFText(file);
+        setPdfPageCount2(result.pageCount);
+        const tokens = estimateTokens(result.text);
+        setPdfTokenEstimate2(tokens);
+        if (result.pageCount <= 50) {
+          setInput({ secondPdfText: result.text });
+        }
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Failed to extract PDF text from second file');
+      }
+    }
+  }, [setInput]);
+
   const handleAudio = useCallback((pcm: Float32Array) => {
     setInput({ audioData: pcm });
     setError(null);
@@ -114,12 +138,32 @@ export default function InputPanel({ taskType }: InputPanelProps) {
   }, [setInput]);
 
   const handleSubmit = useCallback(() => {
-    console.log('[InputPanel] handleSubmit called', { lifecycle, hasFile: !!taskInput.file, hasPdfText: !!taskInput.pdfText, pdfPageCount });
-    if (config.requiresPDF && taskInput.file && pdfPageCount > 50) {
-      console.log('[InputPanel] Extracting PDF with range:', pdfRange);
-      extractPDFText(taskInput.file, pdfRange).then(result => {
-        console.log('[InputPanel] PDF range extraction complete:', result.pageCount, 'pages');
-        setInput({ pdfText: result.text });
+    console.log('[InputPanel] handleSubmit called', { lifecycle, hasFile: !!taskInput.file, hasPdfText: !!taskInput.pdfText, pdfPageCount, isRedline, hasSecondFile: !!taskInput.secondFile });
+    
+    const needsExtraction = (config.requiresPDF && taskInput.file && pdfPageCount > 50) ||
+      (isRedline && taskInput.secondFile && pdfPageCount2 > 50);
+    
+    if (needsExtraction) {
+      console.log('[InputPanel] Extracting PDFs with range:', pdfRange);
+      const promises: Promise<void>[] = [];
+      
+      if (config.requiresPDF && taskInput.file && pdfPageCount > 50) {
+        promises.push(
+          extractPDFText(taskInput.file, pdfRange).then(result => {
+            setInput({ pdfText: result.text });
+          })
+        );
+      }
+      
+      if (isRedline && taskInput.secondFile && pdfPageCount2 > 50) {
+        promises.push(
+          extractPDFText(taskInput.secondFile, pdfRange).then(result => {
+            setInput({ secondPdfText: result.text });
+          })
+        );
+      }
+      
+      Promise.all(promises).then(() => {
         setTimeout(() => submitTask(), 100);
       }).catch(e => {
         console.error('[InputPanel] PDF range extraction failed:', e);
@@ -129,7 +173,7 @@ export default function InputPanel({ taskType }: InputPanelProps) {
       console.log('[InputPanel] Calling submitTask directly');
       submitTask();
     }
-  }, [config.requiresPDF, taskInput.file, pdfPageCount, pdfRange, setInput, submitTask]);
+  }, [config.requiresPDF, taskInput.file, taskInput.secondFile, pdfPageCount, pdfPageCount2, pdfRange, setInput, submitTask, isRedline]);
 
   const isDisabled = lifecycle === 'generating' || lifecycle === 'submitting';
   const settings = loadSettings();
@@ -138,16 +182,18 @@ export default function InputPanel({ taskType }: InputPanelProps) {
   const isSubmitDisabled = isDisabled || isResearchOffline ||
     (config.requiresAudio && isRecording) ||
     (config.requiresAudio && !taskInput.audioData) ||
+    // Redline comparison: need two files
+    (isRedline && (!taskInput.pdfText || !taskInput.secondPdfText)) ||
     // PDF+text tasks (pdf_qa, deep_doc_qa): need question input
-    (config.requiresText && config.requiresPDF && !taskInput.question) ||
+    (config.requiresText && config.requiresPDF && !isRedline && !taskInput.question) ||
     // Text-only tasks: need text input
     (config.requiresText && !config.requiresPDF && !taskInput.text) ||
     // Mixed image+PDF tasks: need either image or PDF text
-    (config.requiresImage && config.requiresPDF && !taskInput.imageDataUrl && !taskInput.pdfText) ||
+    (config.requiresImage && config.requiresPDF && !isRedline && !taskInput.imageDataUrl && !taskInput.pdfText) ||
     // Image-only tasks: need imageDataUrl
     (config.requiresImage && !config.requiresPDF && !taskInput.imageDataUrl) ||
     // PDF-only tasks: need pdfText or file
-    (config.requiresPDF && !config.requiresImage && !taskInput.pdfText && !taskInput.file);
+    (config.requiresPDF && !config.requiresImage && !isRedline && !taskInput.pdfText && !taskInput.file);
 
   const submitTitle = (config.requiresAudio && isRecording)
     ? 'Stop recording first'
@@ -176,7 +222,7 @@ export default function InputPanel({ taskType }: InputPanelProps) {
         </div>
       )}
 
-      {config.requiresPDF && (
+      {config.requiresPDF && !isRedline && (
         <div className="space-y-3">
           <FileUploadZone taskType={taskType} onFile={handleFile} onError={setError} />
           {pdfPageCount > 50 && (
@@ -186,6 +232,36 @@ export default function InputPanel({ taskType }: InputPanelProps) {
             <TokenEstimateDisplay tokenCount={pdfTokenEstimate} />
           )}
           <ContextLimitWarning tokenCount={pdfTokenEstimate} pageCount={pdfPageCount} />
+        </div>
+      )}
+
+      {isRedline && (
+        <div className="space-y-4">
+          <div>
+            <p className="text-xs font-medium mb-2" style={{ color: 'var(--on-surface)' }}>
+              <span className="material-symbols-outlined text-sm align-middle mr-1">description</span>
+              Original Document
+            </p>
+            <FileUploadZone taskType={taskType} onFile={handleFile} onError={setError} />
+            {pdfPageCount > 0 && (
+              <p className="text-xs mt-1" style={{ color: 'var(--outline)' }}>
+                {pdfPageCount} pages · ~{pdfTokenEstimate} tokens
+              </p>
+            )}
+          </div>
+          <div>
+            <p className="text-xs font-medium mb-2" style={{ color: 'var(--on-surface)' }}>
+              <span className="material-symbols-outlined text-sm align-middle mr-1">compare_arrows</span>
+              Revised Document
+            </p>
+            <FileUploadZone taskType={taskType} onFile={handleFile2} onError={setError} />
+            {pdfPageCount2 > 0 && (
+              <p className="text-xs mt-1" style={{ color: 'var(--outline)' }}>
+                {pdfPageCount2} pages · ~{pdfTokenEstimate2} tokens
+              </p>
+            )}
+          </div>
+          <ContextLimitWarning tokenCount={pdfTokenEstimate + pdfTokenEstimate2} pageCount={pdfPageCount + pdfPageCount2} />
         </div>
       )}
 

@@ -17,6 +17,7 @@ export interface TaskInput {
   pdfText?: string;
   pdfPageCount?: number;
   secondFile?: File;
+  secondPdfText?: string;
   question?: string;
   tone?: string;
   language?: string;
@@ -292,6 +293,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
 
     let pdfText = taskInput.pdfText;
     let pdfPageCount = taskInput.pdfPageCount;
+    let secondPdfText = taskInput.secondPdfText;
 
     if (taskInput.file && config.requiresPDF && !pdfText) {
       console.log('[TaskContext] Extracting PDF text from:', taskInput.file.name);
@@ -306,6 +308,77 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
         setLifecycle('error');
         return;
       }
+    }
+
+    // Extract second PDF for redline comparison
+    if (activeTask === 'redline_comparison' && taskInput.secondFile && !secondPdfText) {
+      console.log('[TaskContext] Extracting second PDF text from:', taskInput.secondFile.name);
+      try {
+        const result = await extractPDFText(taskInput.secondFile);
+        console.log('[TaskContext] Second PDF extraction complete:', { pageCount: result.pageCount, textLength: result.text.length });
+        secondPdfText = result.text;
+      } catch (e) {
+        console.error('[TaskContext] Second PDF extraction failed:', e);
+        setError(e instanceof Error ? e.message : 'Failed to extract PDF text from second file');
+        setLifecycle('error');
+        return;
+      }
+    }
+
+    // Handle redline comparison specially - compare two documents
+    if (activeTask === 'redline_comparison' && pdfText && secondPdfText) {
+      console.log('[TaskContext] Running redline comparison');
+      setLifecycle('generating');
+      
+      const comparisonPrompt = `Compare the following two document versions and identify all differences, additions, deletions, and modifications:\n\n=== ORIGINAL DOCUMENT ===\n${pdfText}\n\n=== REVISED DOCUMENT ===\n${secondPdfText}\n\nProvide a detailed comparison highlighting all changes.`;
+
+      const messages = buildTaskMessages(activeTask, {
+        text: comparisonPrompt,
+      }, {
+        enableThinking: enableThinking || settings.thinkingModeDefault,
+      });
+
+      const taskId = crypto.randomUUID();
+      const timeoutId = setTimeout(() => {
+        setError('Model timeout. Try reloading.');
+        setLifecycle('error');
+      }, 60000);
+
+      const onMessage = (event: MessageEvent) => {
+        const { status, output, numTokens, tps: newTps, taskId: msgTaskId } = event.data;
+        if (msgTaskId !== taskId) return;
+
+        if (status === 'task_update') {
+          setStreamingOutput(prev => prev + (output ?? ''));
+        }
+
+        if (status === 'task_complete') {
+          clearTimeout(timeoutId);
+          workerRef.current?.removeEventListener('message', onMessage);
+          finalizeOutput(output ?? '', activeTask, config, numTokens ?? 0, newTps ?? 0);
+        }
+
+        if (status === 'task_error') {
+          clearTimeout(timeoutId);
+          workerRef.current?.removeEventListener('message', onMessage);
+          setError(event.data.data ?? 'Task failed');
+          setLifecycle('error');
+        }
+      };
+
+      workerRef.current.addEventListener('message', onMessage);
+      workerRef.current.postMessage({
+        type: 'task',
+        data: {
+          taskId,
+          taskType: activeTask,
+          messages,
+          enableThinking: enableThinking || settings.thinkingModeDefault,
+          maxNewTokens: getTokenBudget(activeTask),
+          pass: 1,
+        },
+      });
+      return;
     }
 
     // Smart chunking for large documents instead of truncation
