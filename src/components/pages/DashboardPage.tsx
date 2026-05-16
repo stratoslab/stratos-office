@@ -1,13 +1,18 @@
+import { useState } from 'react';
 import { motion } from 'motion/react';
 import MaterialIcon from '../ui/MaterialIcon';
 import { useTask } from '../../context/TaskContext';
+import { usePipeline } from '../../context/PipelineContext';
 import { TASK_CONFIGS } from '../../taskRouter';
+import { getAllPipelineTemplates, getPipelineTemplate } from '../../pipelineTemplates';
 import DocumentsWorkspace from '../tasks/DocumentsWorkspace';
 import VisualWorkspace from '../tasks/VisualWorkspace';
 import AudioWorkspace from '../tasks/AudioWorkspace';
 import TextWorkspace from '../tasks/TextWorkspace';
 import ResearchWorkspace from '../tasks/ResearchWorkspace';
 import PrivacyWorkspace from '../tasks/PrivacyWorkspace';
+import PipelineWorkspace from '../pipelines/PipelineWorkspace';
+import PipelineSelector from '../pipelines/PipelineSelector';
 
 const quickStartTasks: Array<{ taskType: keyof typeof TASK_CONFIGS; icon: string; title: string; description: string; tags: string[] }> = [
   { taskType: 'ocr', icon: 'document_scanner', title: 'Document OCR', description: 'Extract all text from images and scans.', tags: ['Documents', 'OCR'] },
@@ -23,6 +28,31 @@ const quickStartTasks: Array<{ taskType: keyof typeof TASK_CONFIGS; icon: string
 
 export default function DashboardPage() {
   const { activeTask, selectTask } = useTask();
+  const { activeTemplate, loadTemplate, resetPipeline } = usePipeline();
+  const [showPipelineSelector, setShowPipelineSelector] = useState(false);
+
+  const handleSelectPipeline = (template: Parameters<typeof loadTemplate>[0]) => {
+    loadTemplate(template);
+    setShowPipelineSelector(false);
+  };
+
+  const handleCreateCustom = () => {
+    setShowPipelineSelector(false);
+  };
+
+  if (activeTemplate && !showPipelineSelector) {
+    return <PipelineWorkspace template={activeTemplate} />;
+  }
+
+  if (showPipelineSelector) {
+    return (
+      <PipelineSelector
+        templates={getAllPipelineTemplates()}
+        onSelect={handleSelectPipeline}
+        onCreateCustom={handleCreateCustom}
+      />
+    );
+  }
 
   if (activeTask) {
     const config = TASK_CONFIGS[activeTask];
@@ -98,6 +128,35 @@ export default function DashboardPage() {
       </div>
 
       {/* All tasks by category */}
+      <section className="mb-6 md:mb-10">
+        <div className="flex items-center gap-3 mb-3 md:mb-4">
+          <MaterialIcon name="account_tree" size={18} style={{ color: 'var(--primary-fixed-dim)' }} />
+          <h2 className="text-base md:text-lg font-bold" style={{ color: 'var(--on-surface)' }}>Pipelines</h2>
+          <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--outline)' }}>{getAllPipelineTemplates().length} templates</span>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 md:gap-3">
+          <button
+            onClick={() => setShowPipelineSelector(true)}
+            className="glass-panel rounded-xl p-3 md:p-4 text-left hover:border-[#00D4FF]/50 transition-colors group min-h-[44px] border-dashed"
+            style={{ borderColor: 'rgba(0, 212, 255, 0.2)', borderWidth: '2px' }}
+          >
+            <MaterialIcon name="add" size={18} className="mb-1 md:mb-2 group-hover:text-[#00D4FF] transition-colors" style={{ color: 'var(--primary-fixed-dim)' }} />
+            <p className="text-[11px] md:text-xs font-medium" style={{ color: 'var(--primary-fixed-dim)' }}>Browse Pipelines</p>
+          </button>
+          {getAllPipelineTemplates().slice(0, 5).map(pipeline => (
+            <button
+              key={pipeline.id}
+              onClick={() => handleSelectPipeline(pipeline)}
+              className="glass-panel rounded-xl p-3 md:p-4 text-left hover:border-[#00D4FF]/50 transition-colors group min-h-[44px]"
+              style={{ borderColor: 'rgba(255,255,255,0.05)' }}
+            >
+              <MaterialIcon name={pipeline.icon} size={18} className="mb-1 md:mb-2 group-hover:text-[#00D4FF] transition-colors" style={{ color: 'var(--on-surface-variant)' }} />
+              <p className="text-[11px] md:text-xs font-medium" style={{ color: 'var(--on-surface)' }}>{pipeline.name}</p>
+            </button>
+          ))}
+        </div>
+      </section>
+
       {(['documents', 'visual', 'audio', 'text', 'research', 'privacy'] as const).map(category => {
         const tasks = Object.values(TASK_CONFIGS).filter(t => t.category === category);
         const catInfo = {

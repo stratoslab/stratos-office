@@ -2,6 +2,7 @@ import { useState } from "react";
 import { AnimatePresence } from "motion/react";
 import { ModelProvider, useModel } from "./context/ModelContext";
 import { TaskProvider } from "./context/TaskContext";
+import { PipelineProvider } from "./context/PipelineContext";
 import LandingPage from "./components/pages/LandingPage";
 import LoadingPage from "./components/pages/LoadingPage";
 import DashboardPage from "./components/pages/DashboardPage";
@@ -147,7 +148,9 @@ export default function App() {
   return (
     <ModelProvider>
       <TaskProvider>
-        <AppContent />
+        <PipelineProvider>
+          <AppContent />
+        </PipelineProvider>
       </TaskProvider>
     </ModelProvider>
   );

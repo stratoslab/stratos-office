@@ -296,3 +296,59 @@ export interface WorkerResponse {
   delay?: number;
   cachedPercent?: number;
 }
+
+export type PipelineLifecycle = 'idle' | 'submitting' | 'running' | 'complete' | 'error' | 'cancelled';
+
+export type InputMappingType = 'text' | 'parsed_json' | 'raw_output' | 'file' | 'combined';
+
+export interface PipelineStep {
+  taskType: TaskType;
+  inputMapping: {
+    type: InputMappingType;
+    field?: 'text' | 'pdfText' | 'question' | 'imageDataUrl';
+    fields?: Array<'text' | 'pdfText' | 'imageDataUrl'>;
+  };
+  promptOverride?: string;
+  label?: string;
+}
+
+export interface PipelineTemplate {
+  id: string;
+  name: string;
+  description: string;
+  icon: string;
+  steps: PipelineStep[];
+  category: TaskCategory | 'pipeline';
+  isBuiltIn: boolean;
+  expectedInputs?: Array<{ type: 'image' | 'audio' | 'pdf' | 'text'; label: string }>;
+  createdAt?: string;
+}
+
+export type StepStatus = 'pending' | 'running' | 'complete' | 'error' | 'skipped';
+
+export interface PipelineStepRun {
+  stepIndex: number;
+  taskType: TaskType;
+  label: string;
+  status: StepStatus;
+  input: Record<string, unknown>;
+  output?: string;
+  parsedOutput?: unknown;
+  error?: string;
+  tokenCount?: number;
+  tps?: number;
+  durationMs?: number;
+}
+
+export interface PipelineRun {
+  id: string;
+  templateId: string;
+  templateName: string;
+  steps: PipelineStepRun[];
+  status: PipelineLifecycle;
+  currentStepIndex: number;
+  startedAt: string;
+  completedAt?: string;
+  totalTokens: number;
+  totalDurationMs: number;
+}

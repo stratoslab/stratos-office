@@ -47,12 +47,18 @@ export function getTokenBudget(taskType: TaskType): number {
 export function buildTaskMessages(
   taskType: TaskType,
   input: { text?: string; imageDataUrl?: string; audioData?: Float32Array; pdfText?: string; question?: string; tone?: string; language?: string; searchResults?: string; pageContent?: string },
-  options?: { enableThinking?: boolean; passOneOutput?: string }
+  options?: { enableThinking?: boolean; passOneOutput?: string; pipelineContext?: { previousOutputs: Array<{ text: string; parsed?: unknown }>; currentStepIndex: number } }
 ): Array<{ role: string; content: string | Array<{ type: string; [key: string]: unknown }> }> {
   const config = TASK_CONFIGS[taskType];
 
+  let systemPrompt = getPrompt(taskType, { language: input.language, tone: input.tone, question: input.question });
+
+  if (options?.pipelineContext) {
+    systemPrompt = resolvePromptTemplate(systemPrompt, options.pipelineContext);
+  }
+
   if (taskType === 'research' && input.searchResults !== undefined) {
-    const systemPrompt = getPrompt(taskType, { language: input.language, tone: input.tone, question: input.question })
+    systemPrompt = systemPrompt
       .replace('{searchResults}', input.searchResults || 'No search results available.')
       .replace('{pageContent}', input.pageContent || 'No page content available.');
 
@@ -63,8 +69,6 @@ export function buildTaskMessages(
     messages.push({ role: 'user', content: input.text ?? '' });
     return messages;
   }
-
-  const systemPrompt = getPrompt(taskType, { language: input.language, tone: input.tone, question: input.question });
 
   if (config.twoPassPipeline && options?.passOneOutput) {
     const messages: Array<{ role: string; content: string | Array<{ type: string; [key: string]: unknown }> }> = [];
@@ -105,4 +109,27 @@ export function buildTaskMessages(
   }
 
   return messages;
+}
+
+function resolvePromptTemplate(
+  prompt: string,
+  pipelineContext: { previousOutputs: Array<{ text: string; parsed?: unknown }>; currentStepIndex: number }
+): string {
+  let resolved = prompt;
+
+  for (let i = 0; i < pipelineContext.previousOutputs.length; i++) {
+    const stepNum = i + 1;
+    resolved = resolved.replace(
+      new RegExp(`\\{step_${stepNum}_output\\}`, 'g'),
+      pipelineContext.previousOutputs[i].text
+    );
+    if (pipelineContext.previousOutputs[i].parsed !== undefined) {
+      resolved = resolved.replace(
+        new RegExp(`\\{step_${stepNum}_parsed\\}`, 'g'),
+        JSON.stringify(pipelineContext.previousOutputs[i].parsed, null, 2)
+      );
+    }
+  }
+
+  return resolved;
 }
