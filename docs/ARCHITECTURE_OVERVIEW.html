@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stratos Office — Architecture Map</title>
+<style>
+  :root {
+    --bg: #00142a;
+    --surface: #04203b;
+    --surface-high: #1e3652;
+    --primary: #00d4ff;
+    --primary-dim: #3cd7ff;
+    --secondary: #6fffe8;
+    --on-bg: #d2e4ff;
+    --on-surface: #bbc9cf;
+    --outline: #859398;
+    --accent: #ffd9a1;
+    --red: #ffb4ab;
+    --green: #6fffe8;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Outfit', system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--on-bg);
+    padding: 2rem;
+    line-height: 1.6;
+  }
+  h1 { font-size: 1.8rem; font-weight: 700; color: var(--primary); margin-bottom: 0.3rem; }
+  h1 span { color: var(--on-bg); font-weight: 300; }
+  .subtitle { color: var(--outline); font-size: 0.9rem; margin-bottom: 2rem; }
+  h2 { font-size: 1.15rem; font-weight: 600; color: var(--secondary); margin: 1.5rem 0 0.75rem; padding-bottom: 0.25rem; border-bottom: 1px solid rgba(255,255,255,0.08); display: inline-block; }
+  h3 { font-size: 0.95rem; font-weight: 600; color: var(--primary-dim); margin: 1rem 0 0.5rem; }
+
+  .layer { border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 1.25rem; margin-bottom: 1.5rem; background: rgba(4,32,59,0.5); }
+  .layer-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.15em; color: var(--outline); font-weight: 600; margin-bottom: 0.75rem; }
+
+  .grid { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+  .card {
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06); border-radius: 8px;
+    padding: 0.55rem 0.8rem; font-size: 0.78rem; transition: border-color 0.2s;
+  }
+  .card:hover { border-color: var(--primary); }
+  .card .name { font-weight: 600; color: var(--on-bg); }
+  .card .desc { color: var(--outline); font-size: 0.65rem; margin-top: 0.15rem; }
+  .card .badge { display: inline-block; font-size: 0.6rem; padding: 0.1rem 0.35rem; border-radius: 4px; margin-right: 0.25rem; font-weight: 600; }
+
+  .badge-file { background: rgba(60,215,255,0.15); color: var(--primary-dim); }
+  .badge-react { background: rgba(111,255,232,0.15); color: var(--secondary); }
+  .badge-worker { background: rgba(255,217,161,0.15); color: var(--accent); }
+  .badge-store { background: rgba(255,180,171,0.15); color: var(--red); }
+  .badge-task { background: rgba(111,255,232,0.1); color: var(--secondary); }
+  .badge-prompt { background: rgba(60,215,255,0.1); color: var(--primary-dim); }
+  .badge-pipe { background: rgba(255,217,161,0.1); color: var(--accent); }
+
+  .flow { display: flex; flex-wrap: wrap; align-items: center; gap: 0.3rem 0.5rem; margin: 0.3rem 0; }
+  .flow-arrow { color: var(--outline); font-size: 0.7rem; }
+  .flow-box { background: rgba(255,255,255,0.04); border-radius: 6px; padding: 0.25rem 0.5rem; font-size: 0.7rem; color: var(--on-bg); border: 1px solid rgba(255,255,255,0.06); }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+  @media (max-width:900px) { .two-col { grid-template-columns: 1fr; } }
+
+  table { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+  td, th { text-align: left; padding: 0.35rem 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05); }
+  th { color: var(--outline); font-weight: 600; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.1em; }
+  td { color: var(--on-bg); }
+  td:first-child { font-weight: 600; color: var(--primary-dim); }
+
+  .cat-row { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+  .cat-tag { background: rgba(255,255,255,0.05); border-radius: 5px; padding: 0.15rem 0.4rem; font-size: 0.65rem; color: var(--on-surface); }
+
+  hr { border: none; border-top: 1px solid rgba(255,255,255,0.06); margin: 1.5rem 0; }
+
+  .glow-num { font-size: 0.65rem; color: var(--outline); background: rgba(255,255,255,0.04); border-radius: 100px; padding: 0.1rem 0.4rem; }
+</style>
+</head>
+<body>
+
+<h1>Stratos Office <span>— Architecture Map</span></h1>
+<p class="subtitle">Private, browser-only AI office assistant · Gemma 4 E2B · WebGPU · React 18 · TypeScript · Vite 6</p>
+
+<!-- ============================================================ -->
+<!-- RUNTIME FLOW -->
+<!-- ============================================================ -->
+<h2>Runtime Data Flow</h2>
+<div class="flow">
+  <span class="flow-box">User Input</span>
+  <span class="flow-arrow">→</span>
+  <span class="flow-box">InputPanel</span>
+  <span class="flow-arrow">→</span>
+  <span class="flow-box">TaskContext.submitTask()</span>
+  <span class="flow-arrow">→</span>
+  <span class="flow-box">fileHandler.ts<br/>(validate / extract)</span>
+  <span class="flow-arrow">→</span>
+  <span class="flow-box">taskRouter.ts<br/>(build messages)</span>
+  <span class="flow-arrow">→</span>
+  <span class="flow-box">worker.js (Web Worker)<br/>(Gemma 4 inference)</span>
+  <span class="flow-arrow">→</span>
+  <span class="flow-box">outputParser.ts</span>
+  <span class="flow-arrow">→</span>
+  <span class="flow-box">OutputPanel</span>
+</div>
+
+<!-- ============================================================ -->
+<!-- APP SHELL -->
+<!-- ============================================================ -->
+<h2>App Shell</h2>
+<div class="layer">
+  <div class="layer-label">Entry Point</div>
+  <div class="grid">
+    <div class="card">
+      <span class="badge badge-file">HTML</span>
+      <span class="name">index.html</span>
+      <div class="desc">Root mount · Google Fonts · OG meta tags</div>
+    </div>
+    <div class="card">
+      <span class="badge badge-react">TSX</span>
+      <span class="name">src/main.tsx</span>
+      <div class="desc">createRoot → &lt;App /&gt; in StrictMode</div>
+    </div>
+    <div class="card">
+      <span class="badge badge-react">TSX</span>
+      <span class="name">src/App.tsx</span>
+      <div class="desc">ModelProvider → TaskProvider → AppContent</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- PAGE ROUTER -->
+<!-- ============================================================ -->
+<div class="layer">
+  <div class="layer-label">Page Router (by model stage)</div>
+  <table>
+    <tr><th>Stage</th><th>Component</th><th>Description</th></tr>
+    <tr><td>idle / checking / unsupported</td><td>LandingPage</td><td>Hero UI · "Load Gemma 4" CTA · GPU detection status</td></tr>
+    <tr><td>downloading / loading</td><td>LoadingPage</td><td>Progress bar · file name · ETA · retry support</td></tr>
+    <tr><td>ready</td><td>DashboardPage</td><td>Quick-start cards · 6 category grids · task workspace</td></tr>
+    <tr><td>error</td><td>LoadingPage (error)</td><td>Error message · resume download button</td></tr>
+  </table>
+</div>
+
+<!-- ============================================================ -->
+<!-- LAYOUT -->
+<!-- ============================================================ -->
+<div class="two-col">
+<div class="layer">
+  <div class="layer-label">Layout Components</div>
+  <div class="grid" style="flex-direction:column;">
+    <div class="card">
+      <span class="badge badge-react">TSX</span>
+      <span class="name">components/layout/TopBar.tsx</span>
+      <div class="desc">Title · settings/hamburger buttons · fixed top</div>
+    </div>
+    <div class="card">
+      <span class="badge badge-react">TSX</span>
+      <span class="name">components/layout/Sidebar.tsx</span>
+      <div class="desc">6 category accordions · 32 tasks · history + settings · mobile drawer</div>
+    </div>
+    <div class="card">
+      <span class="badge badge-react">TSX</span>
+      <span class="name">components/drawers/SettingsDrawer.tsx</span>
+      <div class="desc">Model info · GPU status · privacy mode · TinyFish key · theme · cache clear</div>
+    </div>
+    <div class="card">
+      <span class="badge badge-react">TSX</span>
+      <span class="name">components/drawers/HistoryDrawer.tsx</span>
+      <div class="desc">Past task runs from IndexedDB</div>
+    </div>
+  </div>
+</div>
+
+<div class="layer">
+  <div class="layer-label">State Management (Context)</div>
+  <div class="grid" style="flex-direction:column;">
+    <div class="card">
+      <span class="badge badge-react">TSX</span>
+      <span class="name">context/ModelContext.tsx</span>
+      <div class="desc">Worker lifecycle · check/load/generate/interrupt/reset · GPU info · download retry</div>
+    </div>
+    <div class="card">
+      <span class="badge badge-react">TSX</span>
+      <span class="name">context/TaskContext.tsx</span>
+      <div class="desc">Active task · input state · submission · worker messaging · output parsing · history save · two-pass pipeline</div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- WORKSPACE -->
+<!-- ============================================================ -->
+<h2>Workspace &amp; Task Execution</h2>
+<div class="two-col">
+<div class="layer">
+  <div class="layer-label">Workspace Components</div>
+  <div class="grid" style="flex-direction:column;">
+    <div class="card">
+      <span class="badge badge-react">TSX</span>
+      <span class="name">components/tasks/DocumentsWorkspace.tsx</span>
+      <div class="desc">→ TaskWorkspace (8 task types)</div>
+    </div>
+    <div class="card">
+      <span class="badge badge-react">TSX</span>
+      <span class="name">components/tasks/VisualWorkspace.tsx</span>
+      <div class="desc">→ TaskWorkspace (6 task types)</div>
+    </div>
+    <div class="card">
+      <span class="badge badge-react">TSX</span>
+      <span class="name">components/tasks/AudioWorkspace.tsx</span>
+      <div class="desc">→ TaskWorkspace (5 task types)</div>
+    </div>
+    <div class="card">
+      <span class="badge badge-react">TSX</span>
+      <span class="name">components/tasks/TextWorkspace.tsx</span>
+      <div class="desc">→ TaskWorkspace (8 task types)</div>
+    </div>
+    <div class="card">
+      <span class="badge badge-react">TSX</span>
+      <span class="name">components/tasks/ResearchWorkspace.tsx</span>
+      <div class="desc">→ TaskWorkspace + WebSearchSetupPrompt</div>
+    </div>
+    <div class="card">
+      <span class="badge badge-react">TSX</span>
+      <span class="name">components/tasks/PrivacyWorkspace.tsx</span>
+      <div class="desc">→ TaskWorkspace (3 task types)</div>
+    </div>
+    <div class="card">
+      <span class="badge badge-react">TSX</span>
+      <span class="name">components/workspace/TaskWorkspace.tsx</span>
+      <div class="desc">Split pane: InputPanel + OutputPanel + ThinkingModeToggle</div>
+    </div>
+    <div class="card">
+      <span class="badge badge-react">TSX</span>
+      <span class="name">components/workspace/InputPanel.tsx</span>
+      <div class="desc">File upload · audio recorder · webcam · textarea · question input · PDF range selector · privacy notice · submit button</div>
+    </div>
+    <div class="card">
+      <span class="badge badge-react">TSX</span>
+      <span class="name">components/workspace/OutputPanel.tsx</span>
+      <div class="desc">Conditional renderer · copy/stop/export · disclaimer</div>
+    </div>
+  </div>
+</div>
+
+<div class="layer">
+  <div class="layer-label">Output Renderers</div>
+  <div class="grid" style="flex-direction:column;">
+    <div class="card">
+      <span class="name">MarkdownRenderer.tsx</span>
+      <div class="desc">react-markdown + remark-gfm + highlight.js</div>
+    </div>
+    <div class="card">
+      <span class="name">JsonTreeView.tsx</span>
+      <div class="desc">Collapsible JSON tree for structured task outputs</div>
+    </div>
+    <div class="card">
+      <span class="name">DiffView.tsx</span>
+      <div class="desc">Color-coded addition/deletion/modification for redline comparisons</div>
+    </div>
+    <div class="card">
+      <span class="name">BoundingBoxCanvas.tsx</span>
+      <div class="desc">Object detection overlay canvas on image</div>
+    </div>
+    <div class="card">
+      <span class="name">HtmlPreviewFrame.tsx</span>
+      <div class="desc">Sandboxed iframe for wireframe-to-HTML output</div>
+    </div>
+    <div class="card">
+      <span class="name">StreamingOutput.tsx</span>
+      <div class="desc">Token-by-token display · TPS counter · blink caret</div>
+    </div>
+    <div class="card">
+      <span class="name">ExportButton.tsx</span>
+      <div class="desc">Download as .txt / .json / .md / .html</div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- INFERENCE ENGINE -->
+<!-- ============================================================ -->
+<h2>Inference Engine (Web Worker)</h2>
+<div class="layer">
+  <div class="grid" style="flex-direction:column;">
+    <div class="card">
+      <span class="badge badge-worker">JS</span>
+      <span class="name">src/worker.js</span>
+      <div class="desc">398 lines · entire model lifecycle + task execution in Web Worker</div>
+    </div>
+  </div>
+
+  <h3>Worker Message Protocol</h3>
+  <div style="overflow-x:auto;">
+  <table>
+    <tr><th>Message (→ Worker)</th><th>Response Status (← Worker)</th><th>Description</th></tr>
+    <tr><td>{ type: 'check' }</td><td>check</td><td>navigator.gpu.requestAdapter() · shader-f16 feature check</td></tr>
+    <tr><td>{ type: 'load' }</td><td>loading → progress → ready / download_retry / download_error</td><td>AutoProcessor.from_pretrained + Gemma4ForConditionalGeneration.from_pretrained (q4f16, webgpu)</td></tr>
+    <tr><td>{ type: 'generate' }</td><td>start → update* → complete / error</td><td>Simple prompt completion (used for initial dev testing)</td></tr>
+    <tr><td>{ type: 'task' }</td><td>task_start → task_update* → task_pass1_complete* → task_complete / task_error</td><td>Multimodal task with streaming · two-pass for meeting_minutes/voice_to_email</td></tr>
+    <tr><td>{ type: 'cancel_task' }</td><td>—</td><td>InterruptableStoppingCriteria.interrupt()</td></tr>
+    <tr><td>{ type: 'interrupt' }</td><td>—</td><td>InterruptableStoppingCriteria.interrupt() (for generate mode)</td></tr>
+    <tr><td>{ type: 'reset' }</td><td>—</td><td>InterruptableStoppingCriteria.reset()</td></tr>
+  </table>
+  </div>
+
+  <h3>Model Details</h3>
+  <table>
+    <tr><td>Model ID</td><td>onnx-community/gemma-4-E2B-it-ONNX</td></tr>
+    <tr><td>Runtime</td><td>@huggingface/transformers v4.0.1 (CDN via jsdelivr)</td></tr>
+    <tr><td>Hardware</td><td>WebGPU · Q4F16 quantization</td></tr>
+    <tr><td>Download</td><td>~1-2 GB · exponential backoff retry (5 attempts, 2s→32s) · partial resume via Transformers.js cache</td></tr>
+    <tr><td>Feature gate</td><td>shader-f16 required (otherwise 'unsupported' error)</td></tr>
+  </table>
+
+  <h3>Two-Pass Pipeline (in Worker)</h3>
+  <div class="flow">
+    <span class="flow-box">Pass 1: transcribe audio → raw transcript</span>
+    <span class="flow-arrow">↗</span>
+    <span class="flow-box">worker sends task_pass1_complete</span>
+    <span class="flow-arrow">↘</span>
+    <span class="flow-box">TaskContext sends Pass 2 task with transcript as input</span>
+    <span class="flow-arrow">→</span>
+    <span class="flow-box">Pass 2: structured JSON (minutes / email)</span>
+  </div>
+  <p style="font-size:0.7rem; color: var(--outline); margin-top:0.3rem;">Tasks: meeting_minutes, voice_to_email</p>
+</div>
+
+<!-- ============================================================ -->
+<!-- TASK SYSTEM -->
+<!-- ============================================================ -->
+<h2>Task System — 32 Types × 6 Categories</h2>
+<div class="layer">
+  <div class="two-col">
+  <div>
+    <h3>Documents (8)</h3>
+    <div class="cat-row">
+      <span class="cat-tag">ocr</span>
+      <span class="cat-tag">document_parse</span>
+      <span class="cat-tag">handwriting</span>
+      <span class="cat-tag">table_extract</span>
+      <span class="cat-tag">form_extract</span>
+      <span class="cat-tag">pdf_qa</span>
+      <span class="cat-tag">contract_analyzer</span>
+      <span class="cat-tag">redline_comparison</span>
+    </div>
+    <h3>Visual (6)</h3>
+    <div class="cat-row">
+      <span class="cat-tag">chart_extract</span>
+      <span class="cat-tag">screen_analysis</span>
+      <span class="cat-tag">wireframe_to_html</span>
+      <span class="cat-tag">slide_analyzer</span>
+      <span class="cat-tag">whiteboard_ocr</span>
+      <span class="cat-tag">object_detection</span>
+    </div>
+    <h3>Audio (5)</h3>
+    <div class="cat-row">
+      <span class="cat-tag">transcription</span>
+      <span class="cat-tag">meeting_minutes</span>
+      <span class="cat-tag">voice_to_email</span>
+      <span class="cat-tag">multilingual_transcription</span>
+      <span class="cat-tag">interview_transcriber</span>
+    </div>
+  </div>
+  <div>
+    <h3>Text & Writing (8)</h3>
+    <div class="cat-row">
+      <span class="cat-tag">email_draft</span>
+      <span class="cat-tag">email_reply</span>
+      <span class="cat-tag">tone_rewriter</span>
+      <span class="cat-tag">summarize</span>
+      <span class="cat-tag">meeting_prep</span>
+      <span class="cat-tag">report_generator</span>
+      <span class="cat-tag">code_review</span>
+      <span class="cat-tag">general_text</span>
+    </div>
+    <h3>Research (2)</h3>
+    <div class="cat-row">
+      <span class="cat-tag">research</span>
+      <span class="cat-tag">deep_doc_qa</span>
+    </div>
+    <h3>Privacy-First (3)</h3>
+    <div class="cat-row">
+      <span class="cat-tag">medical_summarizer</span>
+      <span class="cat-tag">legal_analyzer</span>
+      <span class="cat-tag">financial_parser</span>
+    </div>
+  </div>
+  </div>
+
+  <h3>Task Router Architecture</h3>
+  <div class="grid" style="flex-direction:column;">
+    <div class="card">
+      <span class="badge badge-task">TS</span>
+      <span class="name">src/taskRouter.ts</span>
+      <div class="desc">TASK_CONFIGS (metadata per task) · getTaskConfig() · getTokenBudget() · buildTaskMessages()</div>
+    </div>
+    <div class="card">
+      <span class="badge badge-prompt">TS</span>
+      <span class="name">src/prompts/index.ts</span>
+      <div class="desc">Maps task types to category prompt files · getPrompt() with dynamic template vars</div>
+    </div>
+    <div class="card">
+      <span class="badge badge-prompt">TS</span>
+      <span class="name">src/prompts/documents.ts</span>
+      <div class="desc">8 system prompts (ocr, document_parse, handwriting, table_extract, form_extract, pdf_qa, contract_analyzer, redline_comparison)</div>
+    </div>
+    <div class="card">
+      <span class="badge badge-prompt">TS</span>
+      <span class="name">src/prompts/visual.ts</span>
+      <div class="desc">6 system prompts (chart_extract, screen_analysis, wireframe_to_html, slide_analyzer, whiteboard_ocr, object_detection)</div>
+    </div>
+    <div class="card">
+      <span class="badge badge-prompt">TS</span>
+      <span class="name">src/prompts/audio.ts</span>
+      <div class="desc">5 system prompts (transcription, meeting_minutes, voice_to_email, multilingual_transcription, interview_transcriber)</div>
+    </div>
+    <div class="card">
+      <span class="badge badge-prompt">TS</span>
+      <span class="name">src/prompts/text.ts</span>
+      <div class="desc">8 system prompts (email_draft, email_reply, tone_rewriter, summarize, meeting_prep, report_generator, code_review, general_text)</div>
+    </div>
+    <div class="card">
+      <span class="badge badge-prompt">TS</span>
+      <span class="name">src/prompts/research.ts</span>
+      <div class="desc">2 system prompts (research with {searchResults}/{pageContent}, deep_doc_qa with {question})</div>
+    </div>
+    <div class="card">
+      <span class="badge badge-prompt">TS</span>
+      <span class="name">src/prompts/privacy.ts</span>
+      <div class="desc">3 system prompts (medical_summarizer, legal_analyzer, financial_parser) with disclaimers</div>
+    </div>
+  </div>
+
+  <h3>Output Parsing</h3>
+  <div class="grid">
+    <div class="card">
+      <span class="badge badge-task">TS</span>
+      <span class="name">src/outputParser.ts</span>
+      <div class="desc">parseJSON() · extractText() (strips think/fence) · markdownTableToJSON() · jsonToMarkdownTable()</div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- STORAGE & PERSISTENCE -->
+<!-- ============================================================ -->
+<h2>Storage &amp; Persistence</h2>
+<div class="grid">
+  <div class="card">
+    <span class="badge badge-store">TS</span>
+    <span class="name">src/settingsStore.ts</span>
+    <div class="desc">localStorage · offlineMode, thinkingModeDefault, theme · TinyFish API key management</div>
+  </div>
+  <div class="card">
+    <span class="badge badge-store">TS</span>
+    <span class="name">src/historyStore.ts</span>
+    <div class="desc">IndexedDB (stratos-history DB, entries store, timestamp index) · 200 max entries</div>
+  </div>
+  <div class="card">
+    <span class="badge badge-file">TS</span>
+    <span class="name">src/types/index.ts</span>
+    <div class="desc">All TypeScript types: TaskType, TaskConfig, ModelState, WorkerResponse, 12+ structured output interfaces</div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- FILE HANDLING -->
+<!-- ============================================================ -->
+<h2>File &amp; Media Handling</h2>
+<div class="grid" style="flex-direction:column;">
+  <div class="card">
+    <span class="badge badge-file">TS</span>
+    <span class="name">src/fileHandler.ts</span>
+    <div class="desc">validate() (MIME checks, 50MB limit) · readAsDataURL() · extractAudio() (Web Audio API → 16kHz mono Float32Array) · extractPDFText() (pdfjs-dist) · estimateTokens()</div>
+  </div>
+  <div class="card">
+    <span class="badge badge-file">TS</span>
+    <span class="name">src/audioRecorder.ts</span>
+    <div class="desc">AudioRecorder class · MediaRecorder · live level meter (AnalyserNode) · 30min limit · pause/resume · PCM decode</div>
+  </div>
+  <div class="card">
+    <span class="badge badge-file">TS</span>
+    <span class="name">src/webcamCapture.ts</span>
+    <div class="desc">WebcamCapture class · getUserMedia({video}) · OffscreenCanvas captureFrame() → data URL</div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- WEB SEARCH (MCP) -->
+<!-- ============================================================ -->
+<h2>Web Search — TinyFish MCP</h2>
+<div class="layer">
+  <div class="grid" style="flex-direction:column;">
+    <div class="card">
+      <span class="badge badge-task">TS</span>
+      <span class="name">src/mcpClient.ts</span>
+      <div class="desc">search() · fetchContent() · fetchMultiple() · validateKey() · in-memory LRU caches (5min search, 15min fetch) · McpAuthError / McpNetworkError</div>
+    </div>
+  </div>
+  <table style="margin-top:0.5rem;">
+    <tr><th>Endpoint</th><th>Method</th><th>Purpose</th></tr>
+    <tr><td>api.search.tinyfish.ai?query=</td><td>GET with X-API-Key</td><td>Search results (title, url, snippet)</td></tr>
+    <tr><td>api.fetch.tinyfish.ai</td><td>POST with JSON { urls, format }</td><td>Page content extraction as markdown</td></tr>
+  </table>
+  <p style="font-size:0.7rem; color: var(--outline); margin-top:0.3rem;">Research task only · optional (Offline Mode toggle) · API key in localStorage · 10s search / 15s fetch timeout · 3 urls max · 8K chars per fetch · 24K combined</p>
+</div>
+
+<!-- ============================================================ -->
+<!-- STYLING -->
+<!-- ============================================================ -->
+<h2>Styling &amp; Design</h2>
+<div class="grid">
+  <div class="card">
+    <span class="badge badge-file">CSS</span>
+    <span class="name">src/index.css</span>
+    <div class="desc">Tailwind v4 import · Material Design 3 dark theme (50+ CSS vars) · glass-panel/glass-floating utilities · shimmer/pulse-glow animations · custom range slider</div>
+  </div>
+  <div class="card">
+    <span class="badge badge-file">Asset</span>
+    <span class="name">public/*</span>
+    <div class="desc">stratos-logo-white.png · stratos-favicon.png · background.jpg</div>
+  </div>
+  <div class="card">
+    <span class="badge badge-react">TSX</span>
+    <span class="name">components/ui/MaterialIcon.tsx</span>
+    <div class="desc">Google Material Symbols Outlined wrapper (size, color props)</div>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<!-- BUILD & TEST -->
+<!-- ============================================================ -->
+<h2>Build &amp; Test</h2>
+<div class="two-col">
+<div>
+  <h3>Build Stack</h3>
+  <table>
+    <tr><td>Bundler</td><td>Vite 6</td></tr>
+    <tr><td>Language</td><td>TypeScript 5.8</td></tr>
+    <tr><td>CSS</td><td>Tailwind CSS v4 (@tailwindcss/vite)</td></tr>
+    <tr><td>React</td><td>React 19 + react-dom 19</td></tr>
+    <tr><td>Animation</td><td>Framer Motion (motion/react)</td></tr>
+    <tr><td>Icons</td><td>Google Material Symbols Outlined</td></tr>
+    <tr><td>Markdown</td><td>react-markdown + remark-gfm + highlight.js</td></tr>
+    <tr><td>PDF</td><td>pdfjs-dist v4</td></tr>
+    <tr><td>Font</td><td>Outfit (Google Fonts)</td></tr>
+  </table>
+</div>
+<div>
+  <h3>Security Headers (Vite config)</h3>
+  <div class="flow">
+    <span class="flow-box">Cross-Origin-Opener-Policy: same-origin</span>
+    <span class="flow-arrow">+</span>
+    <span class="flow-box">Cross-Origin-Embedder-Policy: require-corp</span>
+  </div>
+  <p style="font-size:0.7rem; color: var(--outline);">Required for SharedArrayBuffer in Transformers.js WebGPU backend</p>
+
+  <h3>Test Suite (Vitest)</h3>
+  <div class="cat-row">
+    <span class="cat-tag">outputParser.test.ts</span>
+    <span class="cat-tag">taskRouter.test.ts</span>
+    <span class="cat-tag">historyStore.test.ts</span>
+    <span class="cat-tag">fileHandler.test.ts</span>
+    <span class="cat-tag">promptTemplates.test.ts</span>
+    <span class="cat-tag">exportFilename.test.ts</span>
+    <span class="cat-tag">bug1-race-condition.test.tsx</span>
+    <span class="cat-tag">bug2-progress-callback.test.ts</span>
+    <span class="cat-tag">bug3-init-label.test.tsx</span>
+    <span class="cat-tag">InputPanel.unit.test.tsx</span>
+    <span class="cat-tag">InputPanel.integration.test.tsx</span>
+    <span class="cat-tag">InputPanel.preservation.test.tsx</span>
+    <span class="cat-tag">AudioRecorderWidget.*.test.tsx (×2)</span>
+    <span class="cat-tag">preservation-*.test.* (×2)</span>
+  </div>
+  <p style="font-size:0.7rem; color: var(--outline); margin-top:0.3rem;">Environment: jsdom · fake-indexeddb · Testing Library</p>
+</div>
+</div>
+
+<!-- ============================================================ -->
+<!-- FUTURE / SPECS -->
+<!-- ============================================================ -->
+<h2>Future — Pipeline Engine (Spec)</h2>
+<div class="layer">
+  <div class="grid">
+    <div class="card">
+      <span class="badge badge-pipe">MD</span>
+      <span class="name">specs/pipeline-engine/requirements.md</span>
+      <div class="desc">8 user stories · 6 correctness properties · 4 non-functional requirements</div>
+    </div>
+  </div>
+  <table style="margin-top:0.5rem;">
+    <tr><th>Story</th><th>Description</th></tr>
+    <tr><td>US-1</td><td>Pre-built pipeline templates (e.g. "Meeting Intelligence", "Due Diligence")</td></tr>
+    <tr><td>US-2</td><td>Drop mixed files → auto-route through pipeline steps</td></tr>
+    <tr><td>US-3</td><td>Real-time progress indicator with per-step status</td></tr>
+    <tr><td>US-4</td><td>Chain step outputs as next step inputs</td></tr>
+    <tr><td>US-5</td><td>Custom pipeline builder (drag-and-drop task ordering)</td></tr>
+    <tr><td>US-6</td><td>Graceful partial failure handling (retry/skip/abort)</td></tr>
+    <tr><td>US-7</td><td>Export full pipeline as markdown/PDF/JSON</td></tr>
+    <tr><td>US-8</td><td>Pipeline history + re-run capability</td></tr>
+  </table>
+</div>
+
+<!-- ============================================================ -->
+<!-- PROJECT STATS -->
+<!-- ============================================================ -->
+<hr/>
+<h2>Project Stats</h2>
+<div class="grid">
+  <div class="card"><span class="name">Source files:</span> 60+ (excluding node_modules)</div>
+  <div class="card"><span class="name">Task types:</span> 32</div>
+  <div class="card"><span class="name">Categories:</span> 6</div>
+  <div class="card"><span class="name">UI components:</span> ~30</div>
+  <div class="card"><span class="name">Test files:</span> 16</div>
+  <div class="card"><span class="name">Spec files:</span> 1 (pipeline engine)</div>
+  <div class="card"><span class="name">Worker lines:</span> 398</div>
+  <div class="card"><span class="name">Types lines:</span> 298</div>
+  <div class="card"><span class="name">Model:</span> Gemma 4 E2B (Q4F16, WebGPU)</div>
+  <div class="card"><span class="name">Externals:</span> TinyFish MCP (optional)</div>
+</div>
+
+<p style="margin-top:2rem; font-size:0.7rem; color: var(--outline); text-align:center;">
+  Generated from source code — May 2026
+</p>
+
+</body>
+</html>
