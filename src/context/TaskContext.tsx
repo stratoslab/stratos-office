@@ -147,7 +147,8 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     }
 
     let imageDataUrl = taskInput.imageDataUrl;
-    if (taskInput.file && config.requiresImage && !imageDataUrl) {
+    // Only convert file to data URL for actual image files, not PDFs
+    if (taskInput.file && config.requiresImage && !imageDataUrl && taskInput.file.type.startsWith('image/')) {
       try {
         imageDataUrl = await readAsDataURL(taskInput.file);
       } catch {
