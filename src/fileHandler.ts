@@ -137,8 +137,11 @@ export async function extractPDFText(
   file: File,
   pageRange?: { start: number; end: number }
 ): Promise<{ text: string; pageCount: number }> {
-  // Use the legacy build which bundles the worker inline — no manual worker setup needed
   const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs');
+
+  // Set worker source - use CDN for reliability across all environments
+  pdfjsLib.GlobalWorkerOptions.workerSrc =
+    'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.js';
 
   const arrayBuffer = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
