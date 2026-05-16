@@ -15,7 +15,7 @@ interface OutputPanelProps {
 }
 
 export default function OutputPanel({ taskType }: OutputPanelProps) {
-  const { streamingOutput, finalOutput, parsedOutput, lifecycle, tps, cancelTask } = useTask();
+  const { streamingOutput, finalOutput, parsedOutput, lifecycle, tps, cancelTask, taskInput } = useTask();
   const config = getTaskConfig(taskType);
   const isGenerating = lifecycle === 'generating';
   const output = finalOutput || streamingOutput;
@@ -26,8 +26,7 @@ export default function OutputPanel({ taskType }: OutputPanelProps) {
 
   const renderOutput = () => {
     if (taskType === 'object_detection' && parsedOutput) {
-      const imageDataUrl = '';
-      return <BoundingBoxCanvas imageDataUrl={imageDataUrl} detections={parsedOutput as any[]} />;
+      return <BoundingBoxCanvas imageDataUrl={taskInput.imageDataUrl ?? ''} detections={parsedOutput as any[]} />;
     }
 
     if (taskType === 'redline_comparison' && parsedOutput) {

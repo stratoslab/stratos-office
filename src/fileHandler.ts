@@ -31,7 +31,7 @@ function getAcceptedMimes(taskType: TaskType): Set<string> {
     case 'medical_summarizer':
     case 'legal_analyzer':
     case 'financial_parser':
-      return IMAGE_MIMES;
+      return new Set([...IMAGE_MIMES, ...PDF_MIMES]);
     case 'transcription':
     case 'meeting_minutes':
     case 'voice_to_email':

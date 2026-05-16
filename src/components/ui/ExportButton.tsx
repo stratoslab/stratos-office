@@ -55,7 +55,7 @@ export default function ExportButton({ output, parsedOutput, taskType }: ExportB
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-1 px-3 py-1.5 bg-white/10 rounded-lg hover:bg-white/20 transition-colors text-sm"
+        className="flex items-center gap-1 px-3 py-1.5 bg-white/10 rounded-lg hover:bg-white/20 transition-colors text-sm min-h-[44px]"
         aria-label="Export output"
         aria-expanded={isOpen}
       >
