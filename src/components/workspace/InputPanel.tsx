@@ -114,14 +114,19 @@ export default function InputPanel({ taskType }: InputPanelProps) {
   }, [setInput]);
 
   const handleSubmit = useCallback(() => {
+    console.log('[InputPanel] handleSubmit called', { lifecycle, hasFile: !!taskInput.file, hasPdfText: !!taskInput.pdfText, pdfPageCount });
     if (config.requiresPDF && taskInput.file && pdfPageCount > 50) {
+      console.log('[InputPanel] Extracting PDF with range:', pdfRange);
       extractPDFText(taskInput.file, pdfRange).then(result => {
+        console.log('[InputPanel] PDF range extraction complete:', result.pageCount, 'pages');
         setInput({ pdfText: result.text });
         setTimeout(() => submitTask(), 100);
       }).catch(e => {
+        console.error('[InputPanel] PDF range extraction failed:', e);
         setError(e instanceof Error ? e.message : 'Failed to extract PDF text');
       });
     } else {
+      console.log('[InputPanel] Calling submitTask directly');
       submitTask();
     }
   }, [config.requiresPDF, taskInput.file, pdfPageCount, pdfRange, setInput, submitTask]);

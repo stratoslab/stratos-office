@@ -16,11 +16,13 @@ interface OutputPanelProps {
 }
 
 export default function OutputPanel({ taskType }: OutputPanelProps) {
-  const { streamingOutput, finalOutput, parsedOutput, lifecycle, tps, cancelTask, taskInput } = useTask();
+  const { streamingOutput, finalOutput, parsedOutput, lifecycle, tps, cancelTask, taskInput, error } = useTask();
   const config = getTaskConfig(taskType);
   const isGenerating = lifecycle === 'generating';
   const isSubmitting = lifecycle === 'submitting';
   const output = finalOutput || streamingOutput;
+
+  console.log('[OutputPanel] render', { lifecycle, hasOutput: !!output, hasError: !!error, streamingLength: streamingOutput.length });
 
   const handleCopy = () => {
     navigator.clipboard.writeText(output);

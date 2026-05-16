@@ -101,7 +101,11 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const submitTask = useCallback(async () => {
-    if (!activeTask || !workerRef.current || state.stage !== 'ready') return;
+    console.log('[TaskContext] submitTask called', { activeTask, lifecycle, stage: state.stage });
+    if (!activeTask || !workerRef.current || state.stage !== 'ready') {
+      console.warn('[TaskContext] submitTask blocked:', { activeTask, hasWorker: !!workerRef.current, stage: state.stage });
+      return;
+    }
 
     const config = getTaskConfig(activeTask);
     const settings = loadSettings();
@@ -109,11 +113,13 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     if (taskInput.file) {
       const validation = validate(taskInput.file, activeTask);
       if (!validation.accepted) {
+        console.error('[TaskContext] File validation failed:', validation.error);
         setError(validation.error ?? 'File validation failed');
         return;
       }
     }
 
+    console.log('[TaskContext] Setting lifecycle to submitting');
     setLifecycle('submitting');
     setStreamingOutput('');
     setFinalOutput('');
@@ -126,11 +132,14 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     let pdfPageCount = taskInput.pdfPageCount;
 
     if (taskInput.file && config.requiresPDF && !pdfText) {
+      console.log('[TaskContext] Extracting PDF text from:', taskInput.file.name);
       try {
         const result = await extractPDFText(taskInput.file);
+        console.log('[TaskContext] PDF extraction complete:', { pageCount: result.pageCount, textLength: result.text.length });
         pdfText = result.text;
         pdfPageCount = result.pageCount;
       } catch (e) {
+        console.error('[TaskContext] PDF extraction failed:', e);
         setError(e instanceof Error ? e.message : 'Failed to extract PDF text');
         setLifecycle('error');
         return;
@@ -174,6 +183,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
+    console.log('[TaskContext] Building messages and sending to worker');
     const messages = buildTaskMessages(activeTask, {
       text: taskInput.text,
       imageDataUrl,
@@ -189,16 +199,20 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       passOneOutput: passOneOutput.current ?? undefined,
     });
 
+    console.log('[TaskContext] Messages built:', messages.length, 'parts');
+
     const taskId = crypto.randomUUID();
     const isPass2 = passOneOutput.current !== null;
 
     // Timeout: if worker doesn't respond within 30s, show error
     const timeoutId = setTimeout(() => {
+      console.error('[TaskContext] Task timeout after 30s');
       setError('Model is not responding. Try reloading the page.');
       setLifecycle('error');
       workerRef.current?.removeEventListener('message', onMessage);
     }, 30000);
 
+    console.log('[TaskContext] Posting task to worker:', { taskId, taskType: activeTask, pass: isPass2 ? 2 : 1 });
     workerRef.current.postMessage({
       type: 'task',
       data: {
@@ -212,20 +226,24 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       },
     });
 
+    console.log('[TaskContext] Setting lifecycle to generating');
     setLifecycle('generating');
 
     const onMessage = (event: MessageEvent) => {
       const { status, output, numTokens, tps: newTps, taskId: msgTaskId } = event.data;
+      console.log('[TaskContext] Worker message:', { status, taskId: msgTaskId, expectedTaskId: taskId });
 
       if (msgTaskId !== taskId) return;
 
       clearTimeout(timeoutId);
 
       if (status === 'task_update') {
+        console.log('[TaskContext] task_update, output length:', output?.length ?? 0);
         setStreamingOutput(prev => prev + (output ?? ''));
       }
 
       if (status === 'task_pass1_complete') {
+        console.log('[TaskContext] task_pass1_complete');
         passOneOutput.current = output ?? '';
         workerRef.current?.removeEventListener('message', onMessage);
         clearTimeout(timeoutId);
@@ -288,12 +306,14 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (status === 'task_complete') {
+        console.log('[TaskContext] task_complete', { numTokens, tps: newTps });
         clearTimeout(timeoutId);
         workerRef.current?.removeEventListener('message', onMessage);
         finalizeOutput(output ?? streamingOutput, activeTask, config, numTokens ?? 0, newTps ?? 0);
       }
 
       if (status === 'task_error') {
+        console.error('[TaskContext] task_error:', event.data.data);
         clearTimeout(timeoutId);
         workerRef.current?.removeEventListener('message', onMessage);
         setError(event.data.data ?? 'Task failed');
@@ -301,6 +321,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       }
     };
 
+    console.log('[TaskContext] Adding message listener');
     workerRef.current.addEventListener('message', onMessage);
   }, [activeTask, taskInput, enableThinking, workerRef, state.stage, streamingOutput]);
 

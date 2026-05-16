@@ -161,11 +161,15 @@ const session = new ModelSession();
 async function handleTask(data) {
   const { taskId, taskType, messages, enableThinking, maxNewTokens, pass } = data;
 
+  console.log('[Worker] handleTask called', { taskId, taskType, pass, messageCount: messages?.length });
+
   self.postMessage({ status: "task_start", taskId });
 
   try {
     session.reset();
+    console.log('[Worker] Preparing inputs...');
     const inputs = await prepareInputs(messages, enableThinking);
+    console.log('[Worker] Inputs prepared, input_ids shape:', inputs.input_ids?.dims);
 
     let outputText = "";
 
@@ -228,6 +232,7 @@ async function handleTask(data) {
       tps: outputTokens / elapsedSeconds,
     });
   } catch (error) {
+    console.error('[Worker] Task error:', error);
     self.postMessage({
       status: "task_error",
       taskId,
@@ -318,6 +323,7 @@ async function generate(messages, enableThinking, maxNewTokens) {
 
 self.addEventListener("message", async (event) => {
   const { type, data } = event.data;
+  console.log('[Worker] Received message:', { type, taskId: data?.taskId, taskType: data?.taskType });
 
   try {
     switch (type) {

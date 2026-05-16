@@ -46,13 +46,16 @@ export function ModelProvider({ children }: { children: ReactNode }) {
   const startTimeRef = useRef<number>(0);
 
   useEffect(() => {
+    console.log('[ModelContext] Creating worker...');
     const worker = new Worker(new URL("../worker.js", import.meta.url), {
       type: "module",
     });
     workerRef.current = worker;
+    console.log('[ModelContext] Worker created');
 
     worker.addEventListener("message", (event: MessageEvent<WorkerResponse>) => {
       const { status, data, progress, output, numTokens, tps } = event.data;
+      console.log('[ModelContext] Worker message:', status);
 
       switch (status) {
         case "check": {
