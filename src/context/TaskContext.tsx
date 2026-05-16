@@ -146,6 +146,19 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
+    // Limit PDF text to prevent GPU OOM (Gemma 4 E2B on WebGPU ~4096 token context)
+    const MAX_PDF_TOKENS = 3000;
+    let pdfTruncated = false;
+    if (pdfText) {
+      const estimatedTokens = Math.ceil(pdfText.length / 4);
+      if (estimatedTokens > MAX_PDF_TOKENS) {
+        console.warn('[TaskContext] PDF text too large:', estimatedTokens, 'tokens, truncating to', MAX_PDF_TOKENS);
+        const maxLength = MAX_PDF_TOKENS * 4;
+        pdfText = pdfText.slice(0, maxLength) + '\n\n[Document truncated - showing first ~' + MAX_PDF_TOKENS + ' tokens of ' + estimatedTokens + ' total]';
+        pdfTruncated = true;
+      }
+    }
+
     let imageDataUrl = taskInput.imageDataUrl;
     // Only convert file to data URL for actual image files, not PDFs
     if (taskInput.file && config.requiresImage && !imageDataUrl && taskInput.file.type.startsWith('image/')) {
