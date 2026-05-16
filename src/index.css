@@ -48,6 +48,21 @@
   --background: #00142a;
   --on-background: #d2e4ff;
   --surface-variant: #1e3652;
+  --warning: #f59e0b;
+  --warning-container: #78350f;
+  --on-warning-container: #fef3c7;
+}
+
+@media (max-width: 767px) {
+  :root {
+    --topbar-height: 56px;
+  }
+}
+
+@media (min-width: 768px) {
+  :root {
+    --topbar-height: 64px;
+  }
 }
 
 body {

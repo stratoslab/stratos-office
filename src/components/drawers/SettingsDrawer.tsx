@@ -58,17 +58,17 @@ export default function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps)
         <>
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} className="fixed inset-0 z-[60]" style={{ background: 'rgba(0, 20, 42, 0.6)', backdropFilter: 'blur(4px)' }} />
           <motion.div initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} transition={{ type: 'spring', damping: 25, stiffness: 200 }} className="fixed inset-y-0 right-0 w-full z-[70] glass-panel flex flex-col shadow-2xl" style={{ maxWidth: '360px', borderLeft: '1px solid rgba(255,255,255,0.1)' }}>
-            <div className="h-16 px-6 flex items-center justify-between" style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+            <div className="h-14 md:h-16 px-4 md:px-6 flex items-center justify-between" style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
               <div className="flex items-center gap-3" style={{ color: 'var(--primary)' }}>
-                <MaterialIcon name="settings" size={20} />
-                <h2 className="text-xl font-bold">Settings</h2>
+                <MaterialIcon name="settings" size={18} />
+                <h2 className="text-lg md:text-xl font-bold">Settings</h2>
               </div>
-              <button onClick={onClose} className="p-2 rounded-full transition-colors" style={{ color: 'var(--outline)' }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.1)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')} aria-label="Close settings">
+              <button onClick={onClose} className="p-2 rounded-full transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center" style={{ color: 'var(--outline)' }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.1)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')} aria-label="Close settings">
                 <MaterialIcon name="close" size={20} />
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto px-6 py-8 space-y-8">
+            <div className="flex-1 overflow-y-auto px-4 md:px-6 py-6 md:py-8 space-y-6 md:space-y-8">
               {/* 1. Model Info */}
               <section className="space-y-4">
                 <div className="flex items-center gap-3 mb-4">
@@ -148,12 +148,12 @@ export default function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps)
                   <h3 className="text-[10px] font-bold uppercase tracking-[0.2em]" style={{ color: 'var(--outline)' }}>Privacy</h3>
                 </div>
                 <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
+                  <div className="space-y-0.5 flex-1 mr-4">
                     <span className="text-sm font-medium" style={{ color: 'var(--on-surface)' }}>Offline Mode</span>
                     <p className="text-[10px] font-medium tracking-wide" style={{ color: 'var(--outline)' }}>Disable all external MCP calls</p>
                   </div>
-                  <button onClick={() => toggleSetting('offlineMode')} className="w-10 h-5 rounded-full relative cursor-pointer transition-colors" style={{ background: settings.offlineMode ? 'var(--primary-container)' : 'var(--surface-variant)' }}>
-                    <div className="absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all" style={{ left: settings.offlineMode ? '22px' : '2px' }} />
+                  <button onClick={() => toggleSetting('offlineMode')} className="w-12 h-6 rounded-full relative cursor-pointer transition-colors flex-shrink-0 min-w-[48px]" style={{ background: settings.offlineMode ? 'var(--primary-container)' : 'var(--surface-variant)' }}>
+                    <div className="absolute top-1 w-4 h-4 bg-white rounded-full transition-all" style={{ left: settings.offlineMode ? '24px' : '4px' }} />
                   </button>
                 </div>
               </section>
@@ -254,12 +254,12 @@ export default function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps)
                   <h3 className="text-[10px] font-bold uppercase tracking-[0.2em]" style={{ color: 'var(--outline)' }}>AI Behavior</h3>
                 </div>
                 <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
+                  <div className="space-y-0.5 flex-1 mr-4">
                     <span className="text-sm font-medium" style={{ color: 'var(--on-surface)' }}>Thinking Mode Default</span>
                     <p className="text-[10px] font-medium tracking-wide" style={{ color: 'var(--outline)' }}>Enable reasoning by default</p>
                   </div>
-                  <button onClick={() => toggleSetting('thinkingModeDefault')} className="w-10 h-5 rounded-full relative cursor-pointer transition-colors" style={{ background: settings.thinkingModeDefault ? 'var(--primary-container)' : 'var(--surface-variant)' }}>
-                    <div className="absolute top-0.5 w-4 h-4 bg-white rounded-full transition-all" style={{ left: settings.thinkingModeDefault ? '22px' : '2px' }} />
+                  <button onClick={() => toggleSetting('thinkingModeDefault')} className="w-12 h-6 rounded-full relative cursor-pointer transition-colors flex-shrink-0 min-w-[48px]" style={{ background: settings.thinkingModeDefault ? 'var(--primary-container)' : 'var(--surface-variant)' }}>
+                    <div className="absolute top-1 w-4 h-4 bg-white rounded-full transition-all" style={{ left: settings.thinkingModeDefault ? '24px' : '4px' }} />
                   </button>
                 </div>
               </section>

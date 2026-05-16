@@ -43,7 +43,7 @@ export default function DashboardPage() {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="flex-1 overflow-y-auto p-6 md:p-10 relative pb-28"
+      className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-10 relative pb-16 md:pb-28"
       style={{ background: 'var(--background)' }}
     >
       <div
@@ -51,37 +51,37 @@ export default function DashboardPage() {
         style={{ background: 'rgba(168, 232, 255, 0.05)', filter: 'blur(120px)' }}
       />
 
-      <header className="mb-10">
-        <h1 className="text-3xl font-bold mb-1" style={{ color: 'var(--on-surface)' }}>
+      <header className="mb-6 md:mb-10">
+        <h1 className="text-2xl md:text-3xl font-bold mb-1" style={{ color: 'var(--on-surface)' }}>
           Welcome back, Strategist
         </h1>
-        <p style={{ color: 'var(--on-surface-variant)' }}>
+        <p className="text-sm md:text-base" style={{ color: 'var(--on-surface-variant)' }}>
           Your AI workspace is primed and ready — 30+ tasks across 6 categories.
         </p>
       </header>
 
       {/* Quick start cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-6 md:mb-10">
         {quickStartTasks.map(card => (
           <div
             key={card.taskType}
-            className="glass-panel rounded-2xl p-6 group cursor-pointer transition-all duration-300 relative overflow-hidden"
+            className="glass-panel rounded-2xl p-4 md:p-6 group cursor-pointer transition-all duration-300 relative overflow-hidden"
             style={{ borderColor: 'rgba(255,255,255,0.05)' }}
             onClick={() => selectTask(card.taskType)}
             onMouseEnter={e => (e.currentTarget.style.borderColor = 'rgba(0, 212, 255, 0.5)')}
             onMouseLeave={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,0.05)')}
           >
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between mb-4 md:mb-6">
               <div
-                className="w-12 h-12 rounded-xl flex items-center justify-center"
+                className="w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center"
                 style={{ background: 'var(--surface-container-highest)', color: 'var(--primary-fixed-dim)' }}
               >
-                <MaterialIcon name={card.icon} size={24} />
+                <MaterialIcon name={card.icon} size={20} />
               </div>
-              <MaterialIcon name="north_east" size={20} className="opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: 'var(--outline)' }} />
+              <MaterialIcon name="north_east" size={18} className="opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: 'var(--outline)' }} />
             </div>
-            <h3 className="text-xl font-bold mb-1" style={{ color: 'var(--on-surface)' }}>{card.title}</h3>
-            <p className="text-sm mb-6" style={{ color: 'var(--outline)' }}>{card.description}</p>
+            <h3 className="text-base md:text-xl font-bold mb-1" style={{ color: 'var(--on-surface)' }}>{card.title}</h3>
+            <p className="text-xs md:text-sm mb-4 md:mb-6" style={{ color: 'var(--outline)' }}>{card.description}</p>
             <div className="flex items-center gap-2 flex-wrap">
               {card.tags.map(tag => (
                 <span
@@ -110,22 +110,22 @@ export default function DashboardPage() {
         }[category];
 
         return (
-          <section key={category} className="mb-10">
-            <div className="flex items-center gap-3 mb-4">
-              <MaterialIcon name={catInfo.icon} size={20} style={{ color: 'var(--primary-fixed-dim)' }} />
-              <h2 className="text-lg font-bold" style={{ color: 'var(--on-surface)' }}>{catInfo.label}</h2>
+          <section key={category} className="mb-6 md:mb-10">
+            <div className="flex items-center gap-3 mb-3 md:mb-4">
+              <MaterialIcon name={catInfo.icon} size={18} style={{ color: 'var(--primary-fixed-dim)' }} />
+              <h2 className="text-base md:text-lg font-bold" style={{ color: 'var(--on-surface)' }}>{catInfo.label}</h2>
               <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--outline)' }}>{tasks.length} tasks</span>
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 md:gap-3">
               {tasks.map(task => (
                 <button
                   key={task.taskType}
                   onClick={() => selectTask(task.taskType)}
-                  className="glass-panel rounded-xl p-4 text-left hover:border-[#00D4FF]/50 transition-colors group"
+                  className="glass-panel rounded-xl p-3 md:p-4 text-left hover:border-[#00D4FF]/50 transition-colors group min-h-[44px]"
                   style={{ borderColor: 'rgba(255,255,255,0.05)' }}
                 >
-                  <MaterialIcon name={task.icon} size={20} className="mb-2 group-hover:text-[#00D4FF] transition-colors" style={{ color: 'var(--on-surface-variant)' }} />
-                  <p className="text-xs font-medium" style={{ color: 'var(--on-surface)' }}>{task.label}</p>
+                  <MaterialIcon name={task.icon} size={18} className="mb-1 md:mb-2 group-hover:text-[#00D4FF] transition-colors" style={{ color: 'var(--on-surface-variant)' }} />
+                  <p className="text-[11px] md:text-xs font-medium" style={{ color: 'var(--on-surface)' }}>{task.label}</p>
                 </button>
               ))}
             </div>

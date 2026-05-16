@@ -17,9 +17,9 @@ export default function LoadingPage() {
         className="w-full h-full flex flex-col justify-center items-center overflow-hidden p-4"
       >
         <div className="w-full max-w-xl flex flex-col items-center">
-          <div className="flex items-center gap-3 mb-10">
+          <div className="flex items-center gap-2 md:gap-3 mb-6 md:mb-10">
             <div
-              className="w-12 h-12 rounded-xl flex items-center justify-center"
+              className="w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center"
               style={{
                 background: isDownloadError ? "var(--warning-container)" : "var(--error-container)",
                 boxShadow: isDownloadError ? "0 0 20px rgba(255, 212, 130, 0.4)" : "0 0 20px rgba(255, 180, 171, 0.4)",
@@ -27,16 +27,16 @@ export default function LoadingPage() {
             >
               <MaterialIcon
                 name={isDownloadError ? "wifi_off" : "warning"}
-                size={32}
+                size={24}
                 style={{ color: isDownloadError ? "var(--on-warning-container)" : "var(--on-error-container)" }}
               />
             </div>
-            <span className="text-2xl font-bold tracking-tight" style={{ color: isDownloadError ? "var(--warning)" : "var(--error)" }}>
+            <span className="text-lg md:text-2xl font-bold tracking-tight" style={{ color: isDownloadError ? "var(--warning)" : "var(--error)" }}>
               {isDownloadError ? "Download Interrupted" : "Loading Failed"}
             </span>
           </div>
 
-          <div className="glass-panel w-full rounded-2xl p-10 flex flex-col items-center">
+          <div className="glass-panel w-full rounded-2xl p-6 md:p-10 flex flex-col items-center">
             {isDownloadError ? (
               <>
                 <p className="text-center mb-2" style={{ color: "var(--on-surface-variant)" }}>
@@ -47,10 +47,10 @@ export default function LoadingPage() {
                     {state.downloadError.cachedPercent}% already cached — resuming will continue from where it left off.
                   </p>
                 )}
-                <div className="flex gap-4">
+                <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
                   <button
                     onClick={resumeDownload}
-                    className="px-8 py-3 rounded-xl font-bold transition-all flex items-center gap-2"
+                    className="px-6 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 min-h-[44px]"
                     style={{ background: "var(--primary-container)", color: "var(--on-primary-container)" }}
                     onMouseEnter={(e) => (e.currentTarget.style.filter = "brightness(1.1)")}
                     onMouseLeave={(e) => (e.currentTarget.style.filter = "brightness(1)")}
@@ -60,7 +60,7 @@ export default function LoadingPage() {
                   </button>
                   <button
                     onClick={() => { clearError(); loadModel(); }}
-                    className="px-6 py-3 rounded-xl font-bold transition-all flex items-center gap-2"
+                    className="px-6 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 min-h-[44px]"
                     style={{ background: "var(--surface-container-highest)", color: "var(--on-surface)" }}
                     onMouseEnter={(e) => (e.currentTarget.style.filter = "brightness(1.1)")}
                     onMouseLeave={(e) => (e.currentTarget.style.filter = "brightness(1)")}
@@ -75,13 +75,13 @@ export default function LoadingPage() {
                 <p className="text-center mb-6" style={{ color: "var(--on-surface-variant)" }}>
                   {state.error || "An unknown error occurred."}
                 </p>
-                <div className="flex gap-4">
+                <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
                   <button
                     onClick={() => {
                       clearError();
                       loadModel();
                     }}
-                    className="px-8 py-3 rounded-xl font-bold transition-all flex items-center gap-2"
+                    className="px-6 py-3 rounded-xl font-bold transition-all flex items-center justify-center gap-2 min-h-[44px]"
                     style={{ background: "var(--primary-container)", color: "var(--on-primary-container)" }}
                     onMouseEnter={(e) => (e.currentTarget.style.filter = "brightness(1.1)")}
                     onMouseLeave={(e) => (e.currentTarget.style.filter = "brightness(1)")}
@@ -119,9 +119,9 @@ export default function LoadingPage() {
 
       <div className="w-full max-w-xl flex flex-col items-center">
         {/* Brand header */}
-        <div className="flex items-center gap-3 mb-10">
+        <div className="flex items-center gap-2 md:gap-3 mb-6 md:mb-10">
           <div
-            className="w-12 h-12 rounded-xl flex items-center justify-center p-2"
+            className="w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center p-2"
             style={{
               background: "var(--primary-container)",
               boxShadow: "0 0 20px rgba(0, 212, 255, 0.4)",
@@ -129,14 +129,14 @@ export default function LoadingPage() {
           >
             <img src="/stratos-logo-white.png" alt="Stratos Office" className="w-full h-full object-contain" />
           </div>
-          <span className="text-2xl font-bold tracking-tight" style={{ color: "var(--primary)" }}>
+          <span className="text-lg md:text-2xl font-bold tracking-tight" style={{ color: "var(--primary)" }}>
             Stratos Office
           </span>
         </div>
 
         {/* Loading card */}
-        <div className="glass-panel w-full rounded-2xl p-10 flex flex-col items-center">
-          <h1 className="text-2xl font-bold mb-8 text-center" style={{ color: "var(--on-surface)" }}>
+        <div className="glass-panel w-full rounded-2xl p-6 md:p-10 flex flex-col items-center">
+          <h1 className="text-lg md:text-2xl font-bold mb-4 md:mb-8 text-center" style={{ color: "var(--on-surface)" }}>
             Preparing Stratos Office
           </h1>
 

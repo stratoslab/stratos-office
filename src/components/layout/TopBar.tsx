@@ -2,28 +2,40 @@ import MaterialIcon from "../ui/MaterialIcon";
 
 interface TopBarProps {
   onOpenSettings: () => void;
+  onOpenMobileSidebar?: () => void;
 }
 
-export default function TopBar({ onOpenSettings }: TopBarProps) {
+export default function TopBar({ onOpenSettings, onOpenMobileSidebar }: TopBarProps) {
   return (
     <header
-      className="fixed top-0 z-50 flex justify-between items-center w-full px-6 h-16 border-b shadow-sm"
+      className="fixed top-0 z-50 flex justify-between items-center w-full px-4 md:px-6 border-b shadow-sm"
       style={{
         background: "rgba(0, 20, 42, 0.4)",
         backdropFilter: "blur(12px)",
         borderColor: "rgba(255,255,255,0.1)",
+        height: "var(--topbar-height, 64px)",
       }}
     >
-      {/* Brand with logo */}
+      {/* Left: hamburger (mobile) + brand */}
       <div className="flex items-center gap-3">
-        <img src="/stratos-logo-white.png" alt="Stratos Office" className="h-7 w-auto" />
-        <span className="text-xl font-bold tracking-tight" style={{ color: "var(--primary)" }}>
+        <button
+          onClick={onOpenMobileSidebar}
+          className="md:hidden p-2 -ml-2 rounded-full transition-colors active:scale-95 duration-100 flex items-center justify-center min-w-[44px] min-h-[44px]"
+          style={{ color: "var(--on-surface-variant)" }}
+          onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.05)")}
+          onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+          aria-label="Open navigation menu"
+        >
+          <MaterialIcon name="menu" size={24} />
+        </button>
+        <img src="/stratos-logo-white.png" alt="Stratos Office" className="h-6 w-auto md:h-7" />
+        <span className="text-lg md:text-xl font-bold tracking-tight" style={{ color: "var(--primary)" }}>
           Stratos Office
         </span>
       </div>
 
       {/* Search + actions */}
-      <div className="flex items-center gap-6">
+      <div className="flex items-center gap-2 md:gap-6">
         {/* Search bar */}
         <div
           className="hidden md:flex items-center rounded-full px-4 py-1.5 border transition-all"
@@ -42,10 +54,10 @@ export default function TopBar({ onOpenSettings }: TopBarProps) {
         </div>
 
         {/* Icon buttons */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1 md:gap-3">
           <button
             onClick={onOpenSettings}
-            className="p-2 rounded-full transition-colors active:scale-95 duration-100 flex items-center justify-center"
+            className="p-2 rounded-full transition-colors active:scale-95 duration-100 flex items-center justify-center min-w-[44px] min-h-[44px]"
             style={{ color: "var(--on-surface-variant)" }}
             onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.05)")}
             onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
@@ -55,7 +67,7 @@ export default function TopBar({ onOpenSettings }: TopBarProps) {
           </button>
 
           <button
-            className="p-2 rounded-full transition-colors active:scale-95 duration-100 relative flex items-center justify-center"
+            className="p-2 rounded-full transition-colors active:scale-95 duration-100 relative flex items-center justify-center min-w-[44px] min-h-[44px] hidden sm:flex"
             style={{ color: "var(--on-surface-variant)" }}
             onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.05)")}
             onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
@@ -74,7 +86,7 @@ export default function TopBar({ onOpenSettings }: TopBarProps) {
 
           {/* Avatar */}
           <div
-            className="flex items-center gap-3 pl-4 border-l ml-2"
+            className="hidden sm:flex items-center gap-3 pl-4 border-l ml-2"
             style={{ borderColor: "rgba(255,255,255,0.1)" }}
           >
             <div

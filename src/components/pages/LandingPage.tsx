@@ -50,42 +50,42 @@ export default function LandingPage() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="flex-grow flex flex-col items-center pt-16 px-4 md:px-12 relative overflow-y-auto"
+      className="flex-grow flex flex-col items-center pt-8 md:pt-16 px-4 md:px-12 relative overflow-y-auto"
       style={{ minHeight: 'calc(100vh - 4rem)' }}
     >
       <div className="absolute top-1/4 left-1/4 w-96 h-96 rounded-full pointer-events-none" style={{ background: 'rgba(0, 212, 255, 0.1)', filter: 'blur(120px)' }} />
       <div className="absolute bottom-1/4 right-1/4 w-96 h-96 rounded-full pointer-events-none" style={{ background: 'rgba(0, 229, 204, 0.1)', filter: 'blur(120px)' }} />
 
-      <div className="w-full max-w-6xl z-10 pb-16">
+      <div className="w-full max-w-6xl z-10 pb-12 md:pb-16">
         {/* Hero */}
-        <div className="text-center mb-12">
-          <div className="w-20 h-20 bg-white/10 rounded-2xl flex items-center justify-center border border-white/20 mb-6 mx-auto p-3">
+        <div className="text-center mb-8 md:mb-12">
+          <div className="w-16 h-16 md:w-20 md:h-20 bg-white/10 rounded-2xl flex items-center justify-center border border-white/20 mb-4 md:mb-6 mx-auto p-3">
             <img src="/stratos-logo-white.png" alt="Stratos Office" className="w-full h-full object-contain" />
           </div>
-          <h1 className="text-4xl md:text-5xl font-bold mb-2 tracking-tight" style={{ color: 'var(--on-surface)' }}>
+          <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold mb-2 tracking-tight" style={{ color: 'var(--on-surface)' }}>
             Stratos Office
           </h1>
-          <p className="text-xl" style={{ color: 'var(--primary-fixed-dim)' }}>
+          <p className="text-base md:text-xl" style={{ color: 'var(--primary-fixed-dim)' }}>
             AI Office Assistant — Private, local AI for your daily work
           </p>
-          <p className="text-sm mt-3 max-w-2xl mx-auto" style={{ color: 'var(--on-surface-variant)' }}>
+          <p className="text-xs md:text-sm mt-3 max-w-2xl mx-auto" style={{ color: 'var(--on-surface-variant)' }}>
             30+ AI-powered tasks across documents, visual, audio, text, research, and privacy categories.
             All inference runs locally in your browser — no data ever leaves your device.
           </p>
         </div>
 
         {/* Category showcase */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-12">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 mb-8 md:mb-12">
           {categories.map(cat => (
             <div
               key={cat.label}
-              className="glass-panel p-5 rounded-2xl border border-white/5 hover:border-white/15 transition-colors"
+              className="glass-panel p-4 md:p-5 rounded-2xl border border-white/5 hover:border-white/15 transition-colors"
             >
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: 'var(--surface-container-highest)', color: cat.color }}>
-                  <MaterialIcon name={cat.icon} size={22} />
+              <div className="flex items-center gap-3 mb-2 md:mb-3">
+                <div className="w-9 h-9 md:w-10 md:h-10 rounded-xl flex items-center justify-center" style={{ background: 'var(--surface-container-highest)', color: cat.color }}>
+                  <MaterialIcon name={cat.icon} size={20} />
                 </div>
-                <h3 className="font-bold text-base" style={{ color: 'var(--on-surface)' }}>{cat.label}</h3>
+                <h3 className="font-bold text-sm md:text-base" style={{ color: 'var(--on-surface)' }}>{cat.label}</h3>
               </div>
               <div className="flex flex-wrap gap-1.5">
                 {cat.tasks.map(task => (
@@ -103,14 +103,14 @@ export default function LandingPage() {
         </div>
 
         {/* CTA */}
-        <div className="flex flex-col items-center gap-6">
+        <div className="flex flex-col items-center gap-4 md:gap-6">
           {isUnsupported ? (
             <div className="flex flex-col items-center gap-4">
-              <div className="flex items-center gap-3 px-6 py-4 rounded-xl border" style={{ background: 'rgba(147, 0, 10, 0.2)', borderColor: 'rgba(255, 180, 171, 0.3)' }}>
-                <MaterialIcon name="warning" size={24} style={{ color: 'var(--error)' }} />
+              <div className="flex items-center gap-3 px-4 md:px-6 py-3 md:py-4 rounded-xl border" style={{ background: 'rgba(147, 0, 10, 0.2)', borderColor: 'rgba(255, 180, 171, 0.3)' }}>
+                <MaterialIcon name="warning" size={20} style={{ color: 'var(--error)' }} />
                 <div className="text-left">
-                  <p className="font-bold text-sm" style={{ color: 'var(--error)' }}>WebGPU Not Available</p>
-                  <p className="text-xs mt-1" style={{ color: 'rgba(255, 180, 171, 0.8)' }}>
+                  <p className="font-bold text-xs md:text-sm" style={{ color: 'var(--error)' }}>WebGPU Not Available</p>
+                  <p className="text-[10px] md:text-xs mt-1" style={{ color: 'rgba(255, 180, 171, 0.8)' }}>
                     Please use Chrome 113+ or Edge 113+ with hardware acceleration enabled.
                   </p>
                 </div>
@@ -120,7 +120,7 @@ export default function LandingPage() {
             <button
               onClick={loadModel}
               disabled={state.stage === 'checking'}
-              className="disabled:opacity-50 disabled:cursor-not-allowed px-12 py-4 rounded-xl text-xl font-bold transition-all transform active:scale-95 duration-100 flex items-center gap-3"
+              className="disabled:opacity-50 disabled:cursor-not-allowed px-8 py-3 md:px-12 md:py-4 rounded-xl text-lg md:text-xl font-bold transition-all transform active:scale-95 duration-100 flex items-center gap-2 md:gap-3 min-h-[44px]"
               style={{
                 background: 'var(--primary-container)',
                 color: 'var(--on-primary-container)',
@@ -129,24 +129,24 @@ export default function LandingPage() {
               onMouseEnter={e => (e.currentTarget.style.filter = 'brightness(1.1)')}
               onMouseLeave={e => (e.currentTarget.style.filter = 'brightness(1)')}
             >
-              <MaterialIcon name="bolt" size={24} filled />
+              <MaterialIcon name="bolt" size={20} filled />
               {state.stage === 'checking' ? 'Checking...' : 'Load Gemma 4'}
             </button>
           )}
 
           <div className="flex flex-col gap-2 items-center max-w-lg">
-            <p className="italic" style={{ color: 'var(--on-surface-variant)' }}>
+            <p className="italic text-xs md:text-sm" style={{ color: 'var(--on-surface-variant)' }}>
               Powered by{' '}
               <span className="font-medium" style={{ color: 'var(--secondary-fixed-dim)' }}>
                 Transformers.js
               </span>
               . Local execution ensures 100% privacy.
             </p>
-            <div className="flex items-center gap-3 mt-2">
-              <span className="px-4 py-1.5 text-xs font-semibold rounded-full border" style={{ background: 'rgba(0, 212, 255, 0.1)', color: 'var(--primary-fixed-dim)', borderColor: 'rgba(168, 232, 255, 0.2)' }}>
+            <div className="flex flex-wrap items-center justify-center gap-2 md:gap-3 mt-2">
+              <span className="px-3 md:px-4 py-1 md:py-1.5 text-[10px] md:text-xs font-semibold rounded-full border" style={{ background: 'rgba(0, 212, 255, 0.1)', color: 'var(--primary-fixed-dim)', borderColor: 'rgba(168, 232, 255, 0.2)' }}>
                 WebGPU Required
               </span>
-              <span className="px-4 py-1.5 text-xs font-semibold rounded-full border" style={{ background: 'rgba(0, 212, 255, 0.1)', color: 'var(--primary-fixed-dim)', borderColor: 'rgba(168, 232, 255, 0.2)' }}>
+              <span className="px-3 md:px-4 py-1 md:py-1.5 text-[10px] md:text-xs font-semibold rounded-full border" style={{ background: 'rgba(0, 212, 255, 0.1)', color: 'var(--primary-fixed-dim)', borderColor: 'rgba(168, 232, 255, 0.2)' }}>
                 4GB+ RAM Recommended
               </span>
             </div>

@@ -79,9 +79,9 @@ export default function HistoryDrawer({ isOpen, onClose }: HistoryDrawerProps) {
             className="fixed inset-y-0 right-0 w-full z-[70] glass-panel flex flex-col shadow-2xl"
             style={{ maxWidth: '360px', borderLeft: '1px solid rgba(255,255,255,0.1)' }}
           >
-            <div className="h-16 flex items-center justify-between px-6 shrink-0" style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-              <h2 className="text-xl font-bold" style={{ color: 'var(--on-background)' }}>Task History</h2>
-              <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center transition-colors" style={{ color: 'var(--outline)' }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.1)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')} aria-label="Close history">
+            <div className="h-14 md:h-16 flex items-center justify-between px-4 md:px-6 shrink-0" style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+              <h2 className="text-lg md:text-xl font-bold" style={{ color: 'var(--on-background)' }}>Task History</h2>
+              <button onClick={onClose} className="w-10 h-10 md:w-8 md:h-8 rounded-full flex items-center justify-center transition-colors min-w-[44px] min-h-[44px]" style={{ color: 'var(--outline)' }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(255,255,255,0.1)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')} aria-label="Close history">
                 <MaterialIcon name="close" size={20} />
               </button>
             </div>

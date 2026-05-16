@@ -4,9 +4,10 @@ import { AudioRecorder } from '../../audioRecorder';
 interface AudioRecorderWidgetProps {
   onAudio: (pcm: Float32Array) => void;
   onError: (msg: string) => void;
+  onRecordingChange?: (recording: boolean) => void;
 }
 
-export default function AudioRecorderWidget({ onAudio, onError }: AudioRecorderWidgetProps) {
+export default function AudioRecorderWidget({ onAudio, onError, onRecordingChange }: AudioRecorderWidgetProps) {
   const [isRecording, setIsRecording] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [elapsed, setElapsed] = useState(0);
@@ -39,13 +40,14 @@ export default function AudioRecorderWidget({ onAudio, onError }: AudioRecorderW
     try {
       await recorderRef.current?.start();
       setIsRecording(true);
+      onRecordingChange?.(true);
       setIsPaused(false);
       setElapsed(0);
       setShowWarning(false);
     } catch (e) {
       onError(e instanceof Error ? e.message : 'Failed to start recording');
     }
-  }, [onError]);
+  }, [onError, onRecordingChange]);
 
   const pauseRecording = useCallback(() => {
     recorderRef.current?.pause();
@@ -59,6 +61,7 @@ export default function AudioRecorderWidget({ onAudio, onError }: AudioRecorderW
 
   const stopRecording = useCallback(async () => {
     setIsRecording(false);
+    onRecordingChange?.(false);
     setIsPaused(false);
     try {
       const pcm = await recorderRef.current?.stop();
@@ -66,7 +69,7 @@ export default function AudioRecorderWidget({ onAudio, onError }: AudioRecorderW
     } catch (e) {
       onError(e instanceof Error ? e.message : 'Failed to stop recording');
     }
-  }, [onAudio, onError]);
+  }, [onAudio, onError, onRecordingChange]);
 
   const formatTime = (s: number) => {
     const m = Math.floor(s / 60);
@@ -78,7 +81,7 @@ export default function AudioRecorderWidget({ onAudio, onError }: AudioRecorderW
     return (
       <button
         onClick={startRecording}
-        className="flex items-center gap-2 px-4 py-2 bg-[#00D4FF] text-[#061220] rounded-lg font-medium hover:brightness-110 transition-colors"
+        className="flex items-center gap-2 px-4 py-2.5 bg-[#00D4FF] text-[#061220] rounded-lg font-medium hover:brightness-110 transition-colors min-h-[44px]"
         aria-label="Start recording"
       >
         <span className="material-symbols-outlined">mic</span>
@@ -105,15 +108,15 @@ export default function AudioRecorderWidget({ onAudio, onError }: AudioRecorderW
       </div>
       <div className="flex gap-2">
         {!isPaused ? (
-          <button onClick={pauseRecording} className="px-3 py-1.5 bg-white/10 rounded-lg hover:bg-white/20 transition-colors" aria-label="Pause recording">
+          <button onClick={pauseRecording} className="px-3 py-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors min-h-[44px] flex items-center justify-center" aria-label="Pause recording">
             <span className="material-symbols-outlined text-sm">pause</span>
           </button>
         ) : (
-          <button onClick={resumeRecording} className="px-3 py-1.5 bg-white/10 rounded-lg hover:bg-white/20 transition-colors" aria-label="Resume recording">
+          <button onClick={resumeRecording} className="px-3 py-2 bg-white/10 rounded-lg hover:bg-white/20 transition-colors min-h-[44px] flex items-center justify-center" aria-label="Resume recording">
             <span className="material-symbols-outlined text-sm">play_arrow</span>
           </button>
         )}
-        <button onClick={stopRecording} className="px-3 py-1.5 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition-colors" aria-label="Stop recording">
+        <button onClick={stopRecording} className="px-3 py-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition-colors min-h-[44px] flex items-center justify-center" aria-label="Stop recording">
           <span className="material-symbols-outlined text-sm">stop</span>
         </button>
       </div>

@@ -51,35 +51,35 @@ export default function OutputPanel({ taskType }: OutputPanelProps) {
 
   if (!output && !isGenerating) {
     return (
-      <div className="bg-[#0A2540]/50 rounded-xl p-6 min-h-[200px] flex items-center justify-center">
+      <div className="bg-[#0A2540]/50 rounded-xl p-4 md:p-6 min-h-[200px] flex items-center justify-center">
         <p className="text-gray-500 text-sm">Output will appear here after running the task.</p>
       </div>
     );
   }
 
   return (
-    <div className="bg-[#0A2540]/50 rounded-xl p-6 relative">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-sm font-medium text-gray-400">Output</h3>
-        <div className="flex items-center gap-2">
+    <div className="bg-[#0A2540]/50 rounded-xl p-4 md:p-6 relative">
+      <div className="flex items-center justify-between mb-3 md:mb-4">
+        <h3 className="text-xs md:text-sm font-medium text-gray-400">Output</h3>
+        <div className="flex items-center gap-1.5 md:gap-2">
           {isGenerating && (
             <button
               onClick={cancelTask}
-              className="flex items-center gap-1 px-2 py-1 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition-colors text-sm"
+              className="flex items-center gap-1 px-2 py-1.5 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition-colors text-sm min-h-[36px]"
               aria-label="Stop generation"
             >
               <span className="material-symbols-outlined text-sm">stop</span>
-              Stop
+              <span className="hidden sm:inline">Stop</span>
             </button>
           )}
           {output && (
             <button
               onClick={handleCopy}
-              className="flex items-center gap-1 px-2 py-1 bg-white/10 rounded-lg hover:bg-white/20 transition-colors text-sm"
+              className="flex items-center gap-1 px-2 py-1.5 bg-white/10 rounded-lg hover:bg-white/20 transition-colors text-sm min-h-[36px]"
               aria-label="Copy output"
             >
               <span className="material-symbols-outlined text-sm">content_copy</span>
-              Copy
+              <span className="hidden sm:inline">Copy</span>
             </button>
           )}
           {output && lifecycle === 'complete' && (

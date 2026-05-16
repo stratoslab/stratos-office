@@ -14,12 +14,12 @@ export default function TaskWorkspace({ taskType }: TaskWorkspaceProps) {
   const { enableThinking, setEnableThinking } = useTask();
 
   return (
-    <div className="flex flex-col lg:flex-row gap-6 h-full">
-      <div className="lg:w-1/2 space-y-4">
+    <div className="flex flex-col lg:flex-row gap-4 md:gap-6 h-full p-3 md:p-4 lg:p-0">
+      <div className="lg:w-1/2 space-y-3 md:space-y-4">
         <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-xl font-semibold text-white">{config.label}</h2>
-            <p className="text-sm text-gray-400">{config.description}</p>
+          <div className="min-w-0 flex-1 mr-3">
+            <h2 className="text-lg md:text-xl font-semibold text-white truncate">{config.label}</h2>
+            <p className="text-xs md:text-sm text-gray-400 line-clamp-2">{config.description}</p>
           </div>
           {config.supportsThinkingMode && (
             <ThinkingModeToggle enabled={enableThinking} onChange={setEnableThinking} />

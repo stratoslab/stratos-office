@@ -43,7 +43,7 @@ export default function FileUploadZone({ taskType, onFile, onError, preview }: F
       onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
       onDragLeave={() => setIsDragging(false)}
       onDrop={handleDrop}
-      className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-colors ${
+      className={`border-2 border-dashed rounded-xl p-4 md:p-6 text-center cursor-pointer transition-colors min-h-[100px] flex flex-col items-center justify-center ${
         isDragging ? 'border-[#00D4FF] bg-[#00D4FF]/5' : 'border-white/20 hover:border-white/40'
       }`}
       onClick={() => document.getElementById(`file-input-${taskType}`)?.click()}

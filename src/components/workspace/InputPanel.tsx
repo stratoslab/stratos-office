@@ -26,6 +26,7 @@ export default function InputPanel({ taskType }: InputPanelProps) {
   const config = getTaskConfig(taskType);
   const { taskInput, setInput, submitTask, lifecycle, enableThinking, setEnableThinking } = useTask();
   const [error, setError] = useState<string | null>(null);
+  const [isRecording, setIsRecording] = useState(false);
   const [pdfPageCount, setPdfPageCount] = useState<number>(0);
   const [pdfRange, setPdfRange] = useState<{ start: number; end: number }>({ start: 1, end: 50 });
   const [pdfTokenEstimate, setPdfTokenEstimate] = useState(0);
@@ -98,14 +99,21 @@ export default function InputPanel({ taskType }: InputPanelProps) {
   const isResearchOffline = settings.offlineMode && taskType === 'research';
 
   const isSubmitDisabled = isDisabled || isResearchOffline ||
+    (config.requiresAudio && isRecording) ||
     (config.requiresImage && !taskInput.imageDataUrl) ||
     (config.requiresAudio && !taskInput.audioData) ||
     (config.requiresText && !taskInput.text) ||
     (config.requiresPDF && !taskInput.pdfText && !taskInput.file);
 
+  const submitTitle = (config.requiresAudio && isRecording)
+    ? 'Stop recording first'
+    : isResearchOffline
+      ? 'Web research requires Offline Mode to be disabled'
+      : undefined;
+
   return (
-    <div className="bg-[#0A2540]/50 rounded-xl p-6 space-y-4">
-      <h3 className="text-sm font-medium text-gray-400">Input</h3>
+    <div className="bg-[#0A2540]/50 rounded-xl p-4 md:p-6 space-y-3 md:space-y-4">
+      <h3 className="text-xs md:text-sm font-medium text-gray-400">Input</h3>
 
       {error && (
         <div className="bg-red-900/20 border border-red-500/30 rounded-lg px-3 py-2 text-red-400 text-sm" role="alert">
@@ -120,7 +128,7 @@ export default function InputPanel({ taskType }: InputPanelProps) {
       {config.requiresAudio && (
         <div className="space-y-3">
           <FileUploadZone taskType={taskType} onFile={handleFile} onError={setError} />
-          <AudioRecorderWidget onAudio={handleAudio} onError={setError} />
+          <AudioRecorderWidget onAudio={handleAudio} onError={setError} onRecordingChange={setIsRecording} />
         </div>
       )}
 
@@ -142,7 +150,7 @@ export default function InputPanel({ taskType }: InputPanelProps) {
           value={taskInput.text ?? ''}
           onChange={handleTextChange}
           placeholder="Enter your text here..."
-          className="w-full min-h-[120px] bg-white/5 border border-white/20 rounded-xl p-4 text-sm text-white placeholder-gray-500 focus:border-[#00D4FF] focus:outline-none resize-y"
+          className="w-full min-h-[100px] md:min-h-[120px] bg-white/5 border border-white/20 rounded-xl p-3 md:p-4 text-sm text-white placeholder-gray-500 focus:border-[#00D4FF] focus:outline-none resize-y"
           aria-label="Task input"
         />
       )}
@@ -162,13 +170,13 @@ export default function InputPanel({ taskType }: InputPanelProps) {
       <button
         onClick={handleSubmit}
         disabled={isSubmitDisabled}
-        className={`w-full py-3 rounded-xl font-medium transition-colors ${
+        className={`w-full py-3 md:py-3.5 rounded-xl font-medium transition-colors min-h-[44px] ${
           isSubmitDisabled
             ? 'bg-white/5 text-gray-500 cursor-not-allowed'
             : 'bg-[#00D4FF] text-[#061220] hover:brightness-110'
         }`}
         aria-label="Run task"
-        title={isResearchOffline ? 'Web research requires Offline Mode to be disabled' : undefined}
+        title={submitTitle}
       >
         {lifecycle === 'generating' ? 'Running...' : 'Run Task'}
       </button>
