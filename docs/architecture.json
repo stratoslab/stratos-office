@@ -1,0 +1,455 @@
+{
+  "$schema": "stratos-office-architecture-v2",
+  "project": {
+    "name": "Stratos Office",
+    "version": "0.1.0",
+    "description": "Private, browser-only AI office assistant running Gemma 4 E2B entirely in-browser via WebGPU. No server. No API keys. No data leaves your device.",
+    "entry": "index.html → src/main.tsx → src/App.tsx",
+    "root": "/Users/dhonampemba/Development/canton/stratos-office",
+    "build": {
+      "bundler": "Vite 6",
+      "language": "TypeScript 5.8",
+      "framework": "React 19",
+      "css": "Tailwind CSS v4",
+      "animation": "Framer Motion (motion/react)",
+      "icons": "Google Material Symbols Outlined",
+      "pdf": "pdfjs-dist v4",
+      "markdown": "react-markdown + remark-gfm + highlight.js",
+      "font": "Outfit (Google Fonts)",
+      "test": "Vitest 4 + jsdom + Testing Library + fake-indexeddb"
+    },
+    "security_headers": {
+      "Cross-Origin-Opener-Policy": "same-origin",
+      "Cross-Origin-Embedder-Policy": "require-corp"
+    },
+    "browser_requirements": "Chrome 113+ or Edge 113+ (WebGPU + shader-f16 required)",
+    "path_alias": "@/* → ./src/*"
+  },
+
+  "model": {
+    "id": "onnx-community/gemma-4-E2B-it-ONNX",
+    "runtime": "@huggingface/transformers v4.0.1 (CDN via jsdelivr + ESM)",
+    "hardware": "WebGPU",
+    "quantization": "q4f16",
+    "effective_params": "2.3B",
+    "download_size_gb": "~1-2",
+    "feature_gate": "shader-f16 required (checked via navigator.gpu.requestAdapter().features)",
+    "download_retry": {
+      "max_attempts": 5,
+      "strategy": "exponential backoff: 2s → 4s → 8s → 16s → 32s",
+      "resume": "partial via Transformers.js internal cache"
+    }
+  },
+
+  "nodes": [
+    {"id":"index-html","name":"index.html","icon":"🌐","type":"entry","layer":0,"description":"Root HTML mount. Loads Google Fonts (Outfit, Material Symbols), OG meta tags, and mounts src/main.tsx"},
+    {"id":"main-tsx","name":"main.tsx","icon":"⚛️","type":"entry","layer":0,"description":"React entry point. createRoot(document.getElementById('root')).render(<App/>) in StrictMode"},
+    {"id":"app-tsx","name":"App.tsx","icon":"🏗️","type":"shell","layer":0,"description":"Root component. Wraps everything in ModelProvider → TaskProvider → AppContent. Routes pages by model stage (idle→Landing, downloading→Loading, ready→Dashboard). Renders TopBar, Sidebar, footer, HistoryDrawer, SettingsDrawer."},
+    {"id":"model-context","name":"ModelContext","icon":"🧠","type":"context","layer":1,"description":"Manages Web Worker lifecycle. Holds GPU adapter info, download progress, retry state, tps. Exposes loadModel(), resumeDownload(), generate(), interrupt(), reset(), clearError(). Communicates with worker.js via postMessage."},
+    {"id":"task-context","name":"TaskContext","icon":"📋","type":"context","layer":1,"description":"Manages active task execution. Holds activeTask, taskInput, lifecycle, streamingOutput, finalOutput, parsedOutput. Exposes selectTask(), setInput(), submitTask(), cancelTask(), clearOutput(). Handles two-pass pipeline for meeting_minutes/voice_to_email."},
+    {"id":"landing-page","name":"LandingPage","icon":"🏠","type":"page","layer":2,"description":"Pre-load hero UI. Shows 'Load Gemma 4' CTA, feature highlights, privacy messaging. Displayed when stage is idle/checking/unsupported."},
+    {"id":"loading-page","name":"LoadingPage","icon":"⏳","type":"page","layer":2,"description":"Download/load progress UI. Shows progress bar, file name, ETA, GPU info. Handles download_retry and download_error states with resume button."},
+    {"id":"dashboard-page","name":"DashboardPage","icon":"📊","type":"page","layer":2,"description":"Main workspace hub after model is ready. Shows 9 quick-start cards, then all 32 tasks organized into 6 category grids. Routes to category-specific workspace when a task is selected."},
+    {"id":"settings-drawer","name":"SettingsDrawer","icon":"⚙️","type":"panel","layer":2,"description":"Slide-in settings panel (max 360px). Sections: Model Info, Performance (GPU/backend/TPS), Storage, Privacy (Offline Mode toggle), Web Search (TinyFish key management), AI Behavior (Thinking Mode default), Appearance (Dark/Light theme), Maintenance (Clear Model Cache)."},
+    {"id":"history-drawer","name":"HistoryDrawer","icon":"📜","type":"panel","layer":2,"description":"Slide-in history panel. Loads all TaskEntry[] from IndexedDB, sorted by timestamp desc. Each entry shows task type icon, input summary, output preview, timestamp."},
+    {"id":"sidebar","name":"Sidebar","icon":"📑","type":"layout","layer":2,"description":"Left navigation (280px desktop, full-width mobile drawer). 6 collapsible category accordions containing 32 task items. Bottom buttons for History and Settings. Research category hidden when Offline Mode is active."},
+    {"id":"top-bar","name":"TopBar","icon":"🔝","type":"layout","layer":2,"description":"Fixed top header. Shows 'Stratos Office' title, settings gear icon, mobile hamburger. Height: 56px mobile, 64px desktop."},
+    {"id":"task-workspace","name":"TaskWorkspace","icon":"🖥️","type":"workspace","layer":3,"description":"Generic task workspace shell. Split pane layout: InputPanel (left 50%) + OutputPanel (right 50%) + ThinkingModeToggle. Used by DocumentsWorkspace, TextWorkspace."},
+    {"id":"audio-workspace","name":"AudioWorkspace","icon":"🎙️","type":"workspace","layer":3,"description":"Audio task workspace. Renders TaskWorkspace + AudioRecorderWidget for live mic capture."},
+    {"id":"visual-workspace","name":"VisualWorkspace","icon":"🎨","type":"workspace","layer":3,"description":"Visual task workspace. Renders TaskWorkspace + WebcamCapture for camera input."},
+    {"id":"research-workspace","name":"ResearchWorkspace","icon":"🔬","type":"workspace","layer":3,"description":"Research task workspace. Renders TaskWorkspace + WebSearchSetupPrompt if TinyFish is not connected."},
+    {"id":"privacy-workspace","name":"PrivacyWorkspace","icon":"🔒","type":"workspace","layer":3,"description":"Privacy task workspace. Renders TaskWorkspace with PrivacyNotice + DisclaimerBanner for medical/legal/financial tasks."},
+    {"id":"input-panel","name":"InputPanel","icon":"📥","type":"workspace","layer":3,"description":"Task input controls. Conditionally renders: FileUploadZone, AudioRecorderWidget, WebcamCapture, textarea, question input, PDFPageRangeSelector, TokenEstimateDisplay, ContextLimitWarning, PrivacyNotice, Submit button. Dynamically activates UI based on TaskConfig requirements."},
+    {"id":"output-panel","name":"OutputPanel","icon":"📤","type":"workspace","layer":3,"description":"Task output display. Conditionally routes to specialized renderers: MarkdownRenderer (text/markdown/table), JsonTreeView (json), HtmlPreviewFrame (html), DiffView (redline_comparison), BoundingBoxCanvas (object_detection). Shows StreamingOutput during generation. Includes Copy, Stop, Export buttons."},
+    {"id":"export-button","name":"ExportButton","icon":"💾","type":"workspace","layer":3,"description":"Exports task output. Creates Blob from output text and triggers download via <a> click. Formats: .txt, .json, .md, .html depending on outputFormat and parsedOutput."},
+    {"id":"html-preview-frame","name":"HtmlPreviewFrame","icon":"🖼️","type":"renderer","layer":4,"description":"Sandboxed iframe for wireframe_to_html output. Renders generated HTML in an isolated context via srcdoc attribute."},
+    {"id":"diff-view","name":"DiffView","icon":"🔄","type":"renderer","layer":4,"description":"Color-coded document diff for redline_comparison. Shows additions (green), deletions (red), modifications (blue) with commentary."},
+    {"id":"json-tree-view","name":"JsonTreeView","icon":"🌳","type":"renderer","layer":4,"description":"Collapsible JSON tree for structured task outputs (contract analysis, chart data, meeting minutes, etc.). Renders with indentation and type-colored values."},
+    {"id":"bounding-box-canvas","name":"BoundingBoxCanvas","icon":"🔲","type":"renderer","layer":4,"description":"Canvas overlay for object_detection. Draws bounding boxes and labels over the original image using ObjectDetectionResult[] data."},
+    {"id":"markdown-renderer","name":"MarkdownRenderer","icon":"📝","type":"renderer","layer":4,"description":"Renders markdown output using react-markdown + remark-gfm (tables, strikethrough) + highlight.js (code blocks)."},
+    {"id":"streaming-output","name":"StreamingOutput","icon":"▶️","type":"renderer","layer":4,"description":"Live token-by-token streaming display. Shows TPS counter, blinking caret, and accumulates output in real-time during generation."},
+    {"id":"task-router","name":"taskRouter.ts","icon":"🔀","type":"logic","layer":5,"description":"Task routing engine. TASK_CONFIGS object (32 entries with metadata). buildTaskMessages() constructs message arrays with system prompts + multimodal content. getTokenBudget() returns per-task max_new_tokens."},
+    {"id":"prompts","name":"prompts/*.ts","icon":"📝","type":"logic","layer":5,"description":"6 prompt module files. documents.ts (8), visual.ts (6), audio.ts (5), text.ts (8), research.ts (2), privacy.ts (3). getPrompt() maps TaskType to category via dynamic template interpolation (supports {question}, {tone}, {language}, {searchResults}, {pageContent})."},
+    {"id":"output-parser","name":"outputParser.ts","icon":"🧩","type":"logic","layer":5,"description":"Output parsing utilities. parseJSON() strips <think> blocks and markdown fences, finds first JSON object/array. extractText() strips think/fence blocks. markdownTableToJSON() and jsonToMarkdownTable() for table format conversion."},
+    {"id":"file-handler","name":"fileHandler.ts","icon":"📁","type":"media","layer":5,"description":"File validation and extraction. validate() checks MIME type against task requirements + 50MB size limit. readAsDataURL() for images. extractAudio() uses Web Audio API to decode any format → 16kHz mono Float32Array. extractPDFText() uses pdfjs-dist. estimateTokens() heuristic (chars/4)."},
+    {"id":"audio-recorder","name":"audioRecorder.ts","icon":"🎤","type":"media","layer":5,"description":"AudioRecorder class. getUserMedia({audio}) → MediaRecorder + AnalyserNode for live level meter. Records up to 30 min. Supports pause/resume. stop() decodes to 16kHz mono PCM Float32Array. Fires warning at 25 min."},
+    {"id":"webcam-capture","name":"webcamCapture.ts","icon":"📷","type":"media","layer":5,"description":"WebcamCapture class. getUserMedia({video}) → OffscreenCanvas.captureFrame() → data URL. Used for image-capturing tasks (OCR, chart extract, wireframe, etc.)."},
+    {"id":"worker-js","name":"worker.js","icon":"⚡","type":"engine","layer":6,"description":"Gemma 4 inference Web Worker (398 lines). Handles: check (WebGPU/s-f16), load (download model), generate (simple prompt), task (multimodal task with streaming + two-pass). Loads Transformers.js from CDN. Uses InterruptableStoppingCriteria for cancellation."},
+    {"id":"mcp-client","name":"mcpClient.ts","icon":"🔌","type":"store","layer":7,"description":"TinyFish MCP client. search() → GET api.search.tinyfish.ai?query= with X-API-Key header. fetchContent()/fetchMultiple() → POST api.fetch.tinyfish.ai with {urls, format:'markdown'}. In-memory caching (5min search, 15min fetch). McpAuthError/McpNetworkError classes. Timeout: 10s search, 15s fetch."},
+    {"id":"history-store","name":"historyStore.ts","icon":"🗄️","type":"store","layer":7,"description":"IndexedDB task history. Database: stratos-history, Store: entries, Index: timestamp. CRUD: addEntry(), getAllEntries(), deleteEntry(), clearAll(). Max 200 entries (oldest auto-evicted)."},
+    {"id":"settings-store","name":"settingsStore.ts","icon":"⚙️","type":"store","layer":7,"description":"localStorage settings. Key: stratos-settings. Fields: offlineMode (bool), thinkingModeDefault (bool), theme (dark|light). Also manages TinyFish API key in localStorage key stratos-tinyfish-key."},
+    {"id":"cache-api","name":"Cache API (Browser)","icon":"💽","type":"external","layer":8,"description":"Browser Cache Storage API. Used by Clear Model Cache flow. caches.keys() → caches.delete(name) clears all cached model shards, forcing re-download on next load."},
+    {"id":"tinyfish-api","name":"TinyFish API","icon":"🌊","type":"external","layer":8,"description":"External web search API. Two endpoints: api.search.tinyfish.ai (GET, search results) and api.fetch.tinyfish.ai (POST, page content extraction). Always HTTPS. Only called when research task is active and offlineMode=false."},
+    {"id":"webgpu","name":"WebGPU API","icon":"🎮","type":"external","layer":8,"description":"Browser WebGPU API. Used by Transformers.js for model inference on GPU. Requires shader-f16 feature for fp16 quantization. Coop/COEP headers required for SharedArrayBuffer support."}
+  ],
+
+  "flows": [
+    {
+      "id": "load-gemma-4",
+      "label": "Load Gemma 4",
+      "description": "Boot sequence: GPU check → model download → WebGPU init → ready",
+      "icon": "🚀",
+      "color": "#00d4ff",
+      "nodes": ["landing-page","model-context","worker-js","loading-page","dashboard-page"],
+      "edges": [
+        {"from":"landing-page","to":"model-context","annotation":"click 'Load Gemma 4' button → modelContext.loadModel()"},
+        {"from":"model-context","to":"worker-js","annotation":"postMessage({ type: 'load' }) to worker.js"},
+        {"from":"worker-js","to":"model-context","annotation":"check → loading → progress → ready (streamed via postMessage events)"},
+        {"from":"model-context","to":"loading-page","annotation":"stage transitions: 'downloading'→progress % + file name + ETA"},
+        {"from":"model-context","to":"dashboard-page","annotation":"stage: 'ready' → DashboardPage mounts with tps/gpuAdapter/gpuBackend"}
+      ]
+    },
+    {
+      "id": "run-document-ocr",
+      "label": "Run Document OCR",
+      "description": "Upload image → validate → build prompt → infer → parse → render text",
+      "icon": "📄",
+      "color": "#6fffe8",
+      "nodes": ["sidebar","task-workspace","input-panel","file-handler","task-router","prompts","worker-js","output-parser","output-panel"],
+      "edges": [
+        {"from":"sidebar","to":"task-workspace","annotation":"selectTask('ocr') → TaskContext.activeTask = 'ocr'"},
+        {"from":"task-workspace","to":"input-panel","annotation":"renders FileUploadZone for image upload"},
+        {"from":"input-panel","to":"file-handler","annotation":"file dropped → validate(MIME type, 50MB limit)"},
+        {"from":"file-handler","to":"input-panel","annotation":"readAsDataURL() → imageDataUrl stored in taskInput"},
+        {"from":"input-panel","to":"task-router","annotation":"submitTask() → buildTaskMessages('ocr', { imageDataUrl })"},
+        {"from":"task-router","to":"prompts","annotation":"getPrompt('ocr') → 'Extract all text from the provided image...'"},
+        {"from":"task-router","to":"worker-js","annotation":"postMessage({ type: 'task', messages: [system + user(image)] })"},
+        {"from":"worker-js","to":"output-parser","annotation":"task_update streams output tokens → final string"},
+        {"from":"output-parser","to":"output-panel","annotation":"extractText() strips think/fence → MarkdownRenderer displays"}
+      ]
+    },
+    {
+      "id": "run-web-research",
+      "label": "Run Web Research",
+      "description": "Query → TinyFish search + fetch → synthesize with citations",
+      "icon": "🌐",
+      "color": "#fbbf24",
+      "nodes": ["sidebar","research-workspace","input-panel","mcp-client","task-router","prompts","worker-js","output-panel"],
+      "edges": [
+        {"from":"sidebar","to":"research-workspace","annotation":"selectTask('research')"},
+        {"from":"research-workspace","to":"input-panel","annotation":"shows textarea for query + WebSearchSetupPrompt if no API key"},
+        {"from":"input-panel","to":"mcp-client","annotation":"submitTask() → search(text) → GET api.search.tinyfish.ai"},
+        {"from":"mcp-client","to":"input-panel","annotation":"returns { title, url, snippet }[] → top 5 results"},
+        {"from":"input-panel","to":"mcp-client","annotation":"fetchMultiple(urls.slice(0,3)) → POST api.fetch.tinyfish.ai"},
+        {"from":"mcp-client","to":"input-panel","annotation":"returns pageContent[] (8K chars each, 24K combined)"},
+        {"from":"input-panel","to":"task-router","annotation":"searchResults + pageContent injected into buildTaskMessages()"},
+        {"from":"task-router","to":"prompts","annotation":"getPrompt('research') → interpolates {searchResults} + {pageContent}"},
+        {"from":"task-router","to":"worker-js","annotation":"postMessage with system prompt containing sources"},
+        {"from":"worker-js","to":"output-panel","annotation":"streams markdown with inline citation markers [1], [2]"}
+      ]
+    },
+    {
+      "id": "record-transcribe-meeting",
+      "label": "Record & Transcribe Meeting",
+      "description": "Live mic capture → PCM extraction → two-pass pipeline (transcript → minutes)",
+      "icon": "🎙️",
+      "color": "#fb923c",
+      "nodes": ["sidebar","audio-workspace","input-panel","audio-recorder","file-handler","task-router","prompts","worker-js","output-panel"],
+      "edges": [
+        {"from":"sidebar","to":"audio-workspace","annotation":"selectTask('meeting_minutes') → AudioWorkspace with recorder"},
+        {"from":"audio-workspace","to":"input-panel","annotation":"shows AudioRecorderWidget + file upload"},
+        {"from":"input-panel","to":"audio-recorder","annotation":"start() → getUserMedia({audio}) → MediaRecorder"},
+        {"from":"audio-recorder","to":"input-panel","annotation":"getLevel() → live level meter (AnalyserNode frequency data)"},
+        {"from":"input-panel","to":"file-handler","annotation":"stop() → Blob → decodeToPCM() → Float32Array (16kHz mono)"},
+        {"from":"file-handler","to":"task-router","annotation":"audioData passed as Float32Array to buildTaskMessages()"},
+        {"from":"task-router","to":"prompts","annotation":"getPrompt('meeting_minutes') → 'Generate structured meeting minutes...'"},
+        {"from":"task-router","to":"worker-js","annotation":"Pass 1: postMessage({ type: 'task', pass: 1 }) → raw transcript"},
+        {"from":"worker-js","to":"task-router","annotation":"task_pass1_complete → transcript text returned to TaskContext"},
+        {"from":"task-router","to":"worker-js","annotation":"Pass 2: postMessage({ type: 'task', pass: 2, passOneOutput })"},
+        {"from":"worker-js","to":"output-panel","annotation":"task_complete → structured JSON → JsonTreeView renders"}
+      ]
+    },
+    {
+      "id": "export-results",
+      "label": "Export Results",
+      "description": "Download output as .txt / .json / .md / .html",
+      "icon": "💾",
+      "color": "#f472b6",
+      "nodes": ["output-panel","export-button"],
+      "edges": [
+        {"from":"output-panel","to":"export-button","annotation":"lifecycle==='complete' and output exists → ExportButton mounts"},
+        {"from":"export-button","to":"none","annotation":"creates Blob with proper MIME type → <a> download click → file saved"}
+      ]
+    },
+    {
+      "id": "configure-web-search",
+      "label": "Configure Web Search",
+      "description": "Enter TinyFish API key → validate → persist in localStorage",
+      "icon": "🔑",
+      "color": "#60a5fa",
+      "nodes": ["top-bar","settings-drawer","mcp-client","settings-store"],
+      "edges": [
+        {"from":"top-bar","to":"settings-drawer","annotation":"click settings icon → setSettingsOpen(true) → slide-in drawer"},
+        {"from":"settings-drawer","to":"mcp-client","annotation":"user enters API key → validateKey(key) → GET api.search.tinyfish.ai"},
+        {"from":"mcp-client","to":"settings-drawer","annotation":"returns 'valid' / 'invalid' / 'network_error'"},
+        {"from":"settings-drawer","to":"settings-store","annotation":"on valid → localStorage.setItem('stratos-tinyfish-key', key)"}
+      ]
+    },
+    {
+      "id": "toggle-offline-mode",
+      "label": "Toggle Offline Mode",
+      "description": "Disable all external MCP calls for air-gap privacy",
+      "icon": "✈️",
+      "color": "#a78bfa",
+      "nodes": ["settings-drawer","settings-store","mcp-client","sidebar"],
+      "edges": [
+        {"from":"settings-drawer","to":"settings-store","annotation":"toggleSetting('offlineMode') → saveSettings({ offlineMode: true })"},
+        {"from":"settings-store","to":"sidebar","annotation":"loadSettings().offlineMode → Research category hidden from nav"},
+        {"from":"settings-store","to":"mcp-client","annotation":"offlineMode=true → getApiKey() returns null → all calls short-circuit"}
+      ]
+    },
+    {
+      "id": "review-task-history",
+      "label": "Review Task History",
+      "description": "Browse past 200 task runs from IndexedDB",
+      "icon": "📋",
+      "color": "#ff6b6b",
+      "nodes": ["sidebar","history-drawer","history-store"],
+      "edges": [
+        {"from":"sidebar","to":"history-drawer","annotation":"click 'History' button → onOpenHistory() → isOpen=true"},
+        {"from":"history-drawer","to":"history-store","annotation":"getAllEntries() → indexedDB.open('stratos-history') → object store read"},
+        {"from":"history-store","to":"history-drawer","annotation":"returns TaskEntry[] sorted by timestamp desc → renders as icon list"}
+      ]
+    },
+    {
+      "id": "wireframe-to-html",
+      "label": "Wireframe to HTML",
+      "description": "Sketch image → model generates → functional HTML in sandboxed iframe",
+      "icon": "🎨",
+      "color": "#00d4ff",
+      "nodes": ["sidebar","visual-workspace","input-panel","file-handler","task-router","prompts","worker-js","output-parser","html-preview-frame"],
+      "edges": [
+        {"from":"sidebar","to":"visual-workspace","annotation":"selectTask('wireframe_to_html')"},
+        {"from":"visual-workspace","to":"input-panel","annotation":"FileUploadZone + WebcamCapture for sketch input"},
+        {"from":"input-panel","to":"file-handler","annotation":"upload wireframe image → readAsDataURL()"},
+        {"from":"file-handler","to":"task-router","annotation":"imageDataUrl → buildTaskMessages()"},
+        {"from":"task-router","to":"prompts","annotation":"getPrompt('wireframe_to_html') → 'Return only HTML code in a code block'"},
+        {"from":"task-router","to":"worker-js","annotation":"postMessage with image + system prompt"},
+        {"from":"worker-js","to":"output-parser","annotation":"streams HTML codeblock → extractText() extracts code"},
+        {"from":"output-parser","to":"html-preview-frame","annotation":"outputFormat==='html' → HtmlPreviewFrame with sandboxed iframe"}
+      ]
+    },
+    {
+      "id": "redline-comparison",
+      "label": "Redline Document Comparison",
+      "description": "Two document versions → diff analysis with color-coded output",
+      "icon": "🔄",
+      "color": "#6fffe8",
+      "nodes": ["sidebar","task-workspace","input-panel","file-handler","task-router","prompts","worker-js","output-parser","diff-view"],
+      "edges": [
+        {"from":"sidebar","to":"task-workspace","annotation":"selectTask('redline_comparison') → two file upload slots"},
+        {"from":"task-workspace","to":"input-panel","annotation":"two FileUploadZone instances for document versions"},
+        {"from":"input-panel","to":"file-handler","annotation":"extractPDFText(file) → {text, pageCount} for both documents"},
+        {"from":"file-handler","to":"task-router","annotation":"both pdfText strings → buildTaskMessages() compares them"},
+        {"from":"task-router","to":"prompts","annotation":"getPrompt('redline_comparison') → 'Compare two document versions...'"},
+        {"from":"task-router","to":"worker-js","annotation":"postMessage comparing both document texts"},
+        {"from":"worker-js","to":"output-parser","annotation":"task_complete → parseJSON() → RedlineResult"},
+        {"from":"output-parser","to":"diff-view","annotation":"DiffView renders additions (green), deletions (red), modifications (blue)"}
+      ]
+    },
+    {
+      "id": "clear-model-cache",
+      "label": "Clear Model Cache",
+      "description": "Delete cached model shards from browser Cache API",
+      "icon": "🗑️",
+      "color": "#fb923c",
+      "nodes": ["settings-drawer","cache-api"],
+      "edges": [
+        {"from":"settings-drawer","to":"cache-api","annotation":"handleClearCache() → caches.keys() → caches.delete(name) for each"},
+        {"from":"cache-api","to":"none","annotation":"next model load re-downloads all ~1-2GB from CDN"}
+      ]
+    },
+    {
+      "id": "upload-audio-transcribe",
+      "label": "Upload Audio & Transcribe",
+      "description": "Upload audio/video file → extract PCM → single-pass transcription",
+      "icon": "🎵",
+      "color": "#fbbf24",
+      "nodes": ["sidebar","audio-workspace","input-panel","file-handler","task-router","prompts","worker-js","output-panel"],
+      "edges": [
+        {"from":"sidebar","to":"audio-workspace","annotation":"selectTask('transcription')"},
+        {"from":"audio-workspace","to":"input-panel","annotation":"FileUploadZone accepting audio + video MIME types"},
+        {"from":"input-panel","to":"file-handler","annotation":"extractAudio(file) → AudioContext.decodeAudioData → 16kHz mono PCM"},
+        {"from":"file-handler","to":"task-router","annotation":"audioData Float32Array → buildTaskMessages()"},
+        {"from":"task-router","to":"prompts","annotation":"getPrompt('transcription') → 'Transcribe with speaker turns and timestamps'"},
+        {"from":"task-router","to":"worker-js","annotation":"postMessage({ type: 'task', messages }) with audio data"},
+        {"from":"worker-js","to":"output-panel","annotation":"streams formatted transcript → MarkdownRenderer"}
+      ]
+    },
+    {
+      "id": "object-detection",
+      "label": "Object Detection",
+      "description": "Image → model returns bounding boxes → canvas overlay",
+      "icon": "🔍",
+      "color": "#f472b6",
+      "nodes": ["sidebar","visual-workspace","input-panel","file-handler","task-router","prompts","worker-js","output-parser","bounding-box-canvas"],
+      "edges": [
+        {"from":"sidebar","to":"visual-workspace","annotation":"selectTask('object_detection')"},
+        {"from":"visual-workspace","to":"input-panel","annotation":"shows FileUploadZone + WebcamCapture"},
+        {"from":"input-panel","to":"file-handler","annotation":"validate(image) + readAsDataURL()"},
+        {"from":"file-handler","to":"task-router","annotation":"imageDataUrl → buildTaskMessages()"},
+        {"from":"task-router","to":"prompts","annotation":"getPrompt('object_detection') → 'Return JSON array of {label, confidence, bbox}'"},
+        {"from":"task-router","to":"worker-js","annotation":"postMessage with image"},
+        {"from":"worker-js","to":"output-parser","annotation":"task_complete → parseJSON() → ObjectDetectionResult[]"},
+        {"from":"output-parser","to":"bounding-box-canvas","annotation":"overlays bounding boxes + labels on original image via canvas"}
+      ]
+    },
+    {
+      "id": "contract-analysis",
+      "label": "Contract Analysis",
+      "description": "PDF contract → risk summary, key clauses, flagged terms",
+      "icon": "⚖️",
+      "color": "#a78bfa",
+      "nodes": ["sidebar","task-workspace","input-panel","file-handler","task-router","prompts","worker-js","output-parser","json-tree-view"],
+      "edges": [
+        {"from":"sidebar","to":"task-workspace","annotation":"selectTask('contract_analyzer')"},
+        {"from":"task-workspace","to":"input-panel","annotation":"shows FileUploadZone accepting PDF + image"},
+        {"from":"input-panel","to":"file-handler","annotation":"extractPDFText(file) → {text: string, pageCount: number}"},
+        {"from":"file-handler","to":"task-router","annotation":"pdfText → buildTaskMessages()"},
+        {"from":"task-router","to":"prompts","annotation":"getPrompt('contract_analyzer') → 'Return JSON: summary, key_clauses, flagged_terms...'"},
+        {"from":"task-router","to":"worker-js","annotation":"postMessage with full contract text"},
+        {"from":"worker-js","to":"output-parser","annotation":"parseJSON() → ContractAnalysisResult"},
+        {"from":"output-parser","to":"json-tree-view","annotation":"renders summary, clauses, risk flags with severity badges"}
+      ]
+    }
+  ],
+
+  "task_catalog": {
+    "total_types": 32,
+    "categories": {
+      "documents": {
+        "label": "Documents",
+        "color": "#60a5fa",
+        "icon": "description",
+        "tasks": [
+          {"id":"ocr","label":"Document OCR","desc":"Extract all text from image","format":"markdown","tokens":512},
+          {"id":"document_parse","label":"Document Parse","desc":"Extract structured data from receipts/invoices","format":"json","tokens":1024},
+          {"id":"handwriting","label":"Handwriting Transcription","desc":"Convert handwritten notes to typed text","format":"markdown","tokens":512},
+          {"id":"table_extract","label":"Table Extraction","desc":"Image tables to Markdown","format":"table","tokens":1024},
+          {"id":"form_extract","label":"Form Extraction","desc":"Extract form fields into JSON","format":"json","tokens":1024},
+          {"id":"pdf_qa","label":"PDF Q&A","desc":"Ask questions about PDF content","format":"text","tokens":2048},
+          {"id":"contract_analyzer","label":"Contract Analyzer","desc":"Risk summary, key clauses, flagged terms","format":"json","tokens":2048},
+          {"id":"redline_comparison","label":"Redline Comparison","desc":"Color-coded diff between two docs","format":"json","tokens":2048}
+        ]
+      },
+      "visual": {
+        "label": "Visual",
+        "color": "#f472b6",
+        "icon": "image",
+        "tasks": [
+          {"id":"chart_extract","label":"Chart Extraction","desc":"Extract data points from chart images","format":"json","tokens":1024},
+          {"id":"screen_analysis","label":"Screen Analysis","desc":"Describe UI elements in screenshots","format":"json","tokens":1024},
+          {"id":"wireframe_to_html","label":"Wireframe to HTML","desc":"Convert sketches to working HTML/CSS","format":"html","tokens":2048},
+          {"id":"slide_analyzer","label":"Slide Analyzer","desc":"Speaker notes from presentation slides","format":"json","tokens":1024},
+          {"id":"whiteboard_ocr","label":"Whiteboard OCR","desc":"Clean typed notes from whiteboard photos","format":"markdown","tokens":1024},
+          {"id":"object_detection","label":"Object Detection","desc":"Bounding boxes with labels","format":"json","tokens":1024}
+        ]
+      },
+      "audio": {
+        "label": "Audio",
+        "color": "#fb923c",
+        "icon": "mic",
+        "tasks": [
+          {"id":"transcription","label":"Meeting Transcription","desc":"Formatted transcript with speaker turns","format":"markdown","tokens":2048},
+          {"id":"meeting_minutes","label":"Meeting Minutes","desc":"Structured minutes with action items","format":"json","tokens":2048,"two_pass":true},
+          {"id":"voice_to_email","label":"Voice to Email","desc":"Spoken message to polished email","format":"json","tokens":1024,"two_pass":true},
+          {"id":"multilingual_transcription","label":"Multilingual Transcription","desc":"Transcribe + translate 140+ languages","format":"json","tokens":2048},
+          {"id":"interview_transcriber","label":"Interview Transcriber","desc":"Formatted Q&A transcript","format":"markdown","tokens":2048}
+        ]
+      },
+      "text": {
+        "label": "Text & Writing",
+        "color": "#6fffe8",
+        "icon": "edit_note",
+        "tasks": [
+          {"id":"email_draft","label":"Email Draft","desc":"Professional emails from description","format":"json","tokens":1024},
+          {"id":"email_reply","label":"Email Reply Drafts","desc":"Three reply options with different tones","format":"json","tokens":1536},
+          {"id":"tone_rewriter","label":"Tone Rewriter","desc":"Rewrite in Professional/Casual/Formal/etc","format":"text","tokens":1024},
+          {"id":"summarize","label":"Summarization","desc":"Bullet-point summaries","format":"markdown","tokens":512},
+          {"id":"meeting_prep","label":"Meeting Prep Brief","desc":"Talking points from agenda","format":"json","tokens":1024},
+          {"id":"report_generator","label":"Report Generator","desc":"Formatted report from bullet points","format":"markdown","tokens":2048},
+          {"id":"code_review","label":"Code Review","desc":"Issues with severity badges + suggestions","format":"json","tokens":2048},
+          {"id":"general_text","label":"General Text","desc":"Free-form chat with model","format":"markdown","tokens":2048}
+        ]
+      },
+      "research": {
+        "label": "Research",
+        "color": "#fbbf24",
+        "icon": "search",
+        "tasks": [
+          {"id":"research","label":"Web Research","desc":"Synthesized answer with inline citations","format":"markdown","tokens":2048,"external_api":"TinyFish"},
+          {"id":"deep_doc_qa","label":"Deep Document Q&A","desc":"Q&A over long documents (128K context)","format":"text","tokens":2048}
+        ]
+      },
+      "privacy": {
+        "label": "Privacy-First",
+        "color": "#a78bfa",
+        "icon": "verified_user",
+        "tasks": [
+          {"id":"medical_summarizer","label":"Medical Summarizer","desc":"Plain-language lab results & records","format":"json","tokens":1024,"disclaimer":"AI-generated, not medical advice"},
+          {"id":"legal_analyzer","label":"Legal Document Analyzer","desc":"Key terms, obligations, risk flags","format":"json","tokens":2048,"disclaimer":"AI-generated, not legal advice"},
+          {"id":"financial_parser","label":"Financial Parser","desc":"Structured transaction data from docs","format":"json","tokens":2048,"disclaimer":"AI-extracted, verify originals"}
+        ]
+      }
+    }
+  },
+
+  "folder_map": {
+    "src/": {
+      "main.tsx": "React mount point (createRoot → <App/>)",
+      "App.tsx": "Root component with page router + layout",
+      "worker.js": "Gemma 4 inference Web Worker (398 lines)",
+      "taskRouter.ts": "TASK_CONFIGS + buildTaskMessages() + getTokenBudget()",
+      "outputParser.ts": "parseJSON, extractText, markdownTable↔JSON",
+      "fileHandler.ts": "validate, readAsDataURL, extractAudio, extractPDFText, estimateTokens",
+      "audioRecorder.ts": "AudioRecorder class (MediaRecorder + AnalyserNode)",
+      "webcamCapture.ts": "WebcamCapture class (getUserMedia + OffscreenCanvas)",
+      "mcpClient.ts": "TinyFish search/fetch client with caching",
+      "historyStore.ts": "IndexedDB CRUD for task history (200 max)",
+      "settingsStore.ts": "localStorage settings + API key management",
+      "index.css": "Tailwind v4 import + MD3 dark theme (50+ vars) + animations"
+    },
+    "src/types/": {"index.ts": "All TypeScript interfaces (298 lines). ModelState, TaskType union, 12+ structured output types, WorkerMessage/Response"},
+    "src/context/": {"ModelContext.tsx": "Worker lifecycle", "TaskContext.tsx": "Task execution + two-pass pipeline"},
+    "src/prompts/": {"index.ts": "Prompt router (32 maps)", "documents.ts": "8 prompts", "visual.ts": "6 prompts", "audio.ts": "5 prompts", "text.ts": "8 prompts", "research.ts": "2 prompts", "privacy.ts": "3 prompts"},
+    "src/components/pages/": {"LandingPage.tsx": "Pre-load hero", "LoadingPage.tsx": "Download progress", "DashboardPage.tsx": "Main workspace hub"},
+    "src/components/layout/": {"TopBar.tsx": "Header bar", "Sidebar.tsx": "Navigation sidebar"},
+    "src/components/drawers/": {"HistoryDrawer.tsx": "Task history panel", "SettingsDrawer.tsx": "Settings panel (8 sections)"},
+    "src/components/workspace/": {"TaskWorkspace.tsx": "Split pane", "InputPanel.tsx": "All input controls", "OutputPanel.tsx": "All output renderers", "StreamingOutput.tsx": "Live token display"},
+    "src/components/tasks/": {"6 category workspaces": "All thin wrappers → TaskWorkspace"},
+    "src/components/ui/": {"~20 components": "FileUploadZone, AudioRecorderWidget, WebcamCapture, MarkdownRenderer, JsonTreeView, DiffView, BoundingBoxCanvas, HtmlPreviewFrame, ExportButton, MaterialIcon, PDFPageRangeSelector, TokenEstimateDisplay, ContextLimitWarning, ThinkingModeToggle, PrivacyNotice, DisclaimerBanner, StreamingOutput, Toast"},
+    "src/test/": {"~16 test files": "Unit + integration + bug regression tests (Vitest + jsdom + fake-indexeddb)"},
+    "public/": {"stratos-logo-white.png": "Logo", "stratos-favicon.png": "Favicon", "background.jpg": "Background image"},
+    "specs/pipeline-engine/": {"requirements.md": "Pipeline engine spec — 8 user stories for future composable task chaining"}
+  },
+
+  "future_roadmap": {
+    "pipeline_engine": {
+      "spec": "specs/pipeline-engine/requirements.md",
+      "stories": [
+        "US-1: Pre-built pipeline templates (Meeting Intelligence, Due Diligence)",
+        "US-2: Drop folder of mixed files → auto-route through pipeline",
+        "US-3: Real-time step progress indicator with per-step streaming",
+        "US-4: Chain step N output as step N+1 input (text + JSON passthrough)",
+        "US-5: Custom pipeline builder (drag-and-drop task ordering, saved to localStorage)",
+        "US-6: Graceful partial failure (retry/skip/abort per step)",
+        "US-7: Export full pipeline as markdown/PDF/JSON",
+        "US-8: Pipeline history + re-run capability"
+      ],
+      "correctness": ["Output Chaining Integrity", "Cancellation Safety", "Memory Safety", "Type Compatibility", "Idempotent Re-Runs", "No Cross-Session Contamination"],
+      "out_of_scope": ["Parallel execution", "Conditional branching", "Loop constructs", "External API chaining", "Real-time collaboration", "Versioning"]
+    }
+  },
+
+  "developer_notes": {
+    "git_workflow": "Direct commits to main, no PR workflow",
+    "dev": "npm run dev (vite --port=3000 --host=0.0.0.0)",
+    "build": "npm run build (vite build)",
+    "test": "npm run test (vitest)",
+    "lint": "npm run lint (tsc --noEmit)",
+    "tech_stack_full": ["React 19", "TypeScript 5.8", "Vite 6", "Tailwind CSS v4", "Framer Motion", "pdfjs-dist v4", "react-markdown + remark-gfm + highlight.js"],
+    "ml_stack": ["Transformers.js v4 (CDN)", "ONNX Runtime Web (WebGPU)", "Gemma 4 E2B (Q4F16)"],
+    "storage": ["IndexedDB for task history", "localStorage for settings + API key", "Browser Cache API for model shards"],
+    "external_deps": ["TinyFish MCP (optional, research only)", "Google Fonts (Outfit + Material Symbols)"]
+  }
+}

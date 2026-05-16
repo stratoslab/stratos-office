@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stratos Office — Interactive Flow Map</title>
+<style>
+  :root {
+    --bg: #0b1a2e;
+    --surface: #122d4a;
+    --primary: #00d4ff;
+    --primary-dim: #3cd7ff;
+    --secondary: #6fffe8;
+    --on-bg: #d2e4ff;
+    --on-surface: #bbc9cf;
+    --outline: #6b8a9e;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--on-bg); display: flex; height: 100vh; overflow: hidden; }
+
+  /* Sidebar */
+  #panel {
+    width: 320px; min-width: 320px;
+    background: rgba(4,32,59,0.6);
+    border-right: 1px solid rgba(255,255,255,0.06);
+    padding: 1rem;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+  #panel h1 {
+    font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em;
+    color: var(--primary); margin-bottom: 0.5rem; padding-bottom: 0.5rem;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    display: flex; align-items: center; gap: 0.4rem;
+  }
+  #panel h1 small { font-weight: 400; font-size: 0.55rem; color: var(--outline); letter-spacing: 0; text-transform: none; margin-left: auto; }
+  .flow-btn {
+    display: flex; align-items: center; gap: 0.5rem; padding: 0.45rem 0.6rem;
+    border-radius: 8px; cursor: pointer; transition: all 0.15s;
+    font-size: 0.75rem; border: 1px solid transparent; background: transparent;
+    color: var(--on-surface); text-align: left; width: 100%; font-family: inherit; line-height: 1.3;
+  }
+  .flow-btn:hover { background: rgba(255,255,255,0.04); border-color: rgba(255,255,255,0.08); }
+  .flow-btn.active { background: rgba(0,212,255,0.08); border-color: var(--primary); color: var(--on-bg); }
+  .flow-btn .icon { font-size: 1rem; flex-shrink: 0; }
+  .flow-btn .label { font-weight: 600; font-size: 0.75rem; display: block; }
+  .flow-btn .desc { font-size: 0.6rem; color: var(--outline); display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* Canvas */
+  #canvas { flex: 1; position: relative; overflow: hidden; }
+  #svg { width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
+  #svg path.flow-link { fill: none; stroke-width: 2.5; stroke-linecap: round; opacity: 0; transition: opacity 0.45s, stroke-dashoffset 1s; }
+  #svg path.flow-link.vis { opacity: 1; }
+  #svg text.flow-label { font-size: 6.5px; fill: #d2e4ff; opacity: 0; transition: opacity 0.6s; }
+  #svg text.flow-label.vis { opacity: 1; }
+
+  /* Nodes */
+  #nodes { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+  .node {
+    position: absolute; padding: 0.4rem 0.6rem; border-radius: 7px;
+    border: 1px solid rgba(255,255,255,0.1);
+    background: rgba(18,45,74,0.88); backdrop-filter: blur(6px);
+    font-size: 0.6rem; cursor: default; transition: all 0.3s;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    pointer-events: auto;
+  }
+  .node .ni { font-size: 0.85rem; margin-bottom: 0.1rem; }
+  .node .nn { font-weight: 600; color: var(--on-bg); font-size: 0.62rem; line-height: 1.2; }
+  .node .nt { font-size: 0.5rem; color: var(--outline); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 0.08rem; }
+  .node.highlight { border-color: var(--primary); box-shadow: 0 0 14px rgba(0,212,255,0.2), 0 2px 8px rgba(0,0,0,0.3); }
+  .node.dim { opacity: 0.25; }
+  .node.layer-label {
+    background: transparent; border: none; backdrop-filter: none;
+    box-shadow: none; pointer-events: none; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.15em; font-size: 0.55rem;
+    color: rgba(107,138,158,0.4); padding: 0.2rem 0;
+  }
+
+  /* Annotation box */
+  #ann {
+    position: absolute; bottom: 1.2rem; left: 50%; transform: translateX(-50%);
+    max-width: 750px; width: 92%;
+    background: rgba(4,32,59,0.94); backdrop-filter: blur(12px);
+    border: 1px solid rgba(0,212,255,0.15); border-radius: 10px;
+    padding: 0.7rem 1rem; font-size: 0.72rem; color: var(--on-bg);
+    opacity: 0; transition: opacity 0.4s; pointer-events: none;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.5); z-index: 20;
+    max-height: 38vh; overflow-y: auto;
+  }
+  #ann.vis { opacity: 1; }
+  #ann .at { font-weight: 700; color: var(--primary); margin-bottom: 0.25rem; font-size: 0.8rem; }
+  #ann .ad { color: var(--outline); font-size: 0.65rem; margin-bottom: 0.4rem; }
+  #ann .as { display: flex; align-items: flex-start; gap: 0.4rem; margin: 0.15rem 0; }
+  #ann .aa { color: var(--secondary); font-size: 0.6rem; margin-top: 0.12rem; flex-shrink: 0; }
+  #ann .atxt { color: var(--on-surface); font-size: 0.65rem; line-height: 1.35; }
+  #ann .atxt strong { font-weight: 600; }
+
+  #empty {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+    text-align: center; color: var(--outline); font-size: 0.8rem; line-height: 1.6;
+    pointer-events: none;
+  }
+  #empty .bi { font-size: 2.2rem; margin-bottom: 0.4rem; }
+  #empty .t { font-weight: 600; color: var(--on-surface); font-size: 0.9rem; }
+
+  /* Scrollbar */
+  #panel::-webkit-scrollbar, #ann::-webkit-scrollbar { width: 4px; }
+  #panel::-webkit-scrollbar-thumb, #ann::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 4px; }
+</style>
+</head>
+<body>
+
+<div id="panel"></div>
+
+<div id="canvas">
+  <svg id="svg"></svg>
+  <div id="nodes"></div>
+  <div id="ann"></div>
+  <div id="empty">
+    <div class="bi">↗️</div>
+    <div class="t">Pick a flow from the sidebar</div>
+    <div>Each flow traces how data moves between<br/>components to complete a user action.</div>
+  </div>
+</div>
+
+<script>
+// =============================================================
+// EMBEDDED ARCHITECTURE DATA
+// =============================================================
+const DATA = {
+  "project": {
+    "name": "Stratos Office",
+    "version": "0.1.0",
+    "description": "Private, browser-only AI office assistant running Gemma 4 E2B entirely in-browser via WebGPU"
+  },
+  "nodes": [
+    {"id":"index-html","name":"index.html","icon":"🌐","type":"entry","layer":0},
+    {"id":"main-tsx","name":"main.tsx","icon":"⚛️","type":"entry","layer":0},
+    {"id":"app-tsx","name":"App.tsx","icon":"🏗️","type":"shell","layer":0},
+    {"id":"model-context","name":"ModelContext","icon":"🧠","type":"context","layer":1},
+    {"id":"task-context","name":"TaskContext","icon":"📋","type":"context","layer":1},
+    {"id":"landing-page","name":"LandingPage","icon":"🏠","type":"page","layer":2},
+    {"id":"loading-page","name":"LoadingPage","icon":"⏳","type":"page","layer":2},
+    {"id":"dashboard-page","name":"DashboardPage","icon":"📊","type":"page","layer":2},
+    {"id":"settings-drawer","name":"SettingsDrawer","icon":"⚙️","type":"panel","layer":2},
+    {"id":"history-drawer","name":"HistoryDrawer","icon":"📜","type":"panel","layer":2},
+    {"id":"sidebar","name":"Sidebar","icon":"📑","type":"layout","layer":2},
+    {"id":"top-bar","name":"TopBar","icon":"🔝","type":"layout","layer":2},
+    {"id":"task-workspace","name":"TaskWorkspace","icon":"🖥️","type":"workspace","layer":3},
+    {"id":"audio-workspace","name":"AudioWorkspace","icon":"🎙️","type":"workspace","layer":3},
+    {"id":"visual-workspace","name":"VisualWorkspace","icon":"🎨","type":"workspace","layer":3},
+    {"id":"research-workspace","name":"ResearchWorkspace","icon":"🔬","type":"workspace","layer":3},
+    {"id":"privacy-workspace","name":"PrivacyWorkspace","icon":"🔒","type":"workspace","layer":3},
+    {"id":"input-panel","name":"InputPanel","icon":"📥","type":"workspace","layer":3},
+    {"id":"output-panel","name":"OutputPanel","icon":"📤","type":"workspace","layer":3},
+    {"id":"export-button","name":"ExportButton","icon":"💾","type":"workspace","layer":3},
+    {"id":"html-preview-frame","name":"HtmlPreviewFrame","icon":"🖼️","type":"renderer","layer":4},
+    {"id":"diff-view","name":"DiffView","icon":"🔄","type":"renderer","layer":4},
+    {"id":"json-tree-view","name":"JsonTreeView","icon":"🌳","type":"renderer","layer":4},
+    {"id":"bounding-box-canvas","name":"BoundingBoxCanvas","icon":"🔲","type":"renderer","layer":4},
+    {"id":"markdown-renderer","name":"MarkdownRenderer","icon":"📝","type":"renderer","layer":4},
+    {"id":"streaming-output","name":"StreamingOutput","icon":"▶️","type":"renderer","layer":4},
+    {"id":"task-router","name":"taskRouter.ts","icon":"🔀","type":"logic","layer":5},
+    {"id":"prompts","name":"prompts/*.ts","icon":"📝","type":"logic","layer":5},
+    {"id":"output-parser","name":"outputParser.ts","icon":"🧩","type":"logic","layer":5},
+    {"id":"file-handler","name":"fileHandler.ts","icon":"📁","type":"media","layer":5},
+    {"id":"audio-recorder","name":"audioRecorder.ts","icon":"🎤","type":"media","layer":5},
+    {"id":"webcam-capture","name":"webcamCapture.ts","icon":"📷","type":"media","layer":5},
+    {"id":"worker-js","name":"worker.js","icon":"⚡","type":"engine","layer":6},
+    {"id":"mcp-client","name":"mcpClient.ts","icon":"🔌","type":"store","layer":7},
+    {"id":"history-store","name":"historyStore.ts","icon":"🗄️","type":"store","layer":7},
+    {"id":"settings-store","name":"settingsStore.ts","icon":"⚙️","type":"store","layer":7},
+    {"id":"cache-api","name":"Cache API","icon":"💽","type":"external","layer":8},
+    {"id":"tinyfish-api","name":"TinyFish API","icon":"🌊","type":"external","layer":8},
+    {"id":"webgpu","name":"WebGPU API","icon":"🎮","type":"external","layer":8}
+  ],
+  "flows": [
+    {"id":"load-gemma-4","label":"Load Gemma 4","desc":"GPU check → download → WebGPU init → ready","icon":"🚀","color":"#00d4ff","nodes":["landing-page","model-context","worker-js","loading-page","dashboard-page"],"edges":[{"from":"landing-page","to":"model-context","a":"click 'Load Gemma 4' → loadModel()"},{"from":"model-context","to":"worker-js","a":"postMessage({ type: 'load' })"},{"from":"worker-js","to":"model-context","a":"loading → progress → ready (message events)"},{"from":"model-context","to":"loading-page","a":"stage='downloading' → progress% + ETA"},{"from":"model-context","to":"dashboard-page","a":"stage='ready' → tps, gpuAdapter exposed"}]},
+    {"id":"run-document-ocr","label":"Run Document OCR","desc":"Upload image → validate → prompt → infer → render text","icon":"📄","color":"#6fffe8","nodes":["sidebar","task-workspace","input-panel","file-handler","task-router","prompts","worker-js","output-parser","output-panel"],"edges":[{"from":"sidebar","to":"task-workspace","a":"selectTask('ocr') → activeTask='ocr'"},{"from":"task-workspace","to":"input-panel","a":"renders FileUploadZone"},{"from":"input-panel","to":"file-handler","a":"validate(MIME, 50MB) + readAsDataURL()"},{"from":"file-handler","to":"input-panel","a":"imageDataUrl stored in taskInput"},{"from":"input-panel","to":"task-router","a":"submitTask() → buildTaskMessages()"},{"from":"task-router","to":"prompts","a":"getPrompt('ocr') → system prompt text"},{"from":"task-router","to":"worker-js","a":"postMessage({ type: 'task', messages })"},{"from":"worker-js","to":"output-parser","a":"streams output via task_update events"},{"from":"output-parser","to":"output-panel","a":"extractText() → MarkdownRenderer"}]},
+    {"id":"run-web-research","label":"Run Web Research","desc":"Query → TinyFish search+fetch → synthesize with citations","icon":"🌐","color":"#fbbf24","nodes":["sidebar","research-workspace","input-panel","mcp-client","task-router","prompts","worker-js","output-panel"],"edges":[{"from":"sidebar","to":"research-workspace","a":"selectTask('research')"},{"from":"research-workspace","to":"input-panel","a":"shows query textarea"},{"from":"input-panel","to":"mcp-client","a":"search(text) → GET api.search.tinyfish.ai"},{"from":"mcp-client","to":"input-panel","a":"returns { title, url, snippet }[]"},{"from":"input-panel","to":"mcp-client","a":"fetchMultiple(urls) → POST api.fetch.tinyfish.ai"},{"from":"mcp-client","to":"input-panel","a":"returns pageContent[] (8K chars each)"},{"from":"input-panel","to":"task-router","a":"searchResults + pageContent → messages"},{"from":"task-router","to":"prompts","a":"getPrompt('research') → {searchResults} injection"},{"from":"task-router","to":"worker-js","a":"postMessage with sources in system prompt"},{"from":"worker-js","to":"output-panel","a":"markdown with citation markers [1],[2]"}]},
+    {"id":"record-transcribe-meeting","label":"Record & Transcribe Meeting","desc":"Live mic → PCM → two-pass pipeline (transcript → minutes)","icon":"🎙️","color":"#fb923c","nodes":["sidebar","audio-workspace","input-panel","audio-recorder","file-handler","task-router","prompts","worker-js","output-panel"],"edges":[{"from":"sidebar","to":"audio-workspace","a":"selectTask('meeting_minutes') → recorder UI"},{"from":"audio-workspace","to":"input-panel","a":"shows AudioRecorderWidget"},{"from":"input-panel","to":"audio-recorder","a":"start() → getUserMedia + MediaRecorder"},{"from":"audio-recorder","to":"input-panel","a":"getLevel() → live AnalyserNode level meter"},{"from":"input-panel","to":"audio-recorder","a":"stop() → Blob → decodeToPCM()"},{"from":"audio-recorder","to":"file-handler","a":"Float32Array (16kHz mono PCM)"},{"from":"file-handler","to":"task-router","a":"audioData → buildTaskMessages()"},{"from":"task-router","to":"prompts","a":"getPrompt('meeting_minutes')"},{"from":"task-router","to":"worker-js","a":"Pass 1: postMessage with audio"},{"from":"worker-js","to":"task-router","a":"task_pass1_complete → raw transcript"},{"from":"task-router","to":"worker-js","a":"Pass 2: postMessage with transcript as passOneOutput"},{"from":"worker-js","to":"output-panel","a":"task_complete → structured JSON → JsonTreeView"}]},
+    {"id":"export-results","label":"Export Results","desc":"Download output as .txt / .json / .md / .html","icon":"💾","color":"#f472b6","nodes":["output-panel","export-button"],"edges":[{"from":"output-panel","to":"export-button","a":"lifecycle==='complete' → ExportButton mounts"},{"from":"export-button","to":"none","a":"Blob → <a> download click → file saved"}]},
+    {"id":"configure-web-search","label":"Configure Web Search","desc":"Enter TinyFish key → validate → persist in localStorage","icon":"🔑","color":"#60a5fa","nodes":["top-bar","settings-drawer","mcp-client","settings-store"],"edges":[{"from":"top-bar","to":"settings-drawer","a":"click settings icon → open drawer"},{"from":"settings-drawer","to":"mcp-client","a":"validateKey(key) → GET with X-API-Key"},{"from":"mcp-client","to":"settings-drawer","a":"returns 'valid' / 'invalid' / 'network_error'"},{"from":"settings-drawer","to":"settings-store","a":"localStorage.setItem('stratos-tinyfish-key', key)"}]},
+    {"id":"toggle-offline-mode","label":"Toggle Offline Mode","desc":"Disable all external MCP calls for air-gap privacy","icon":"✈️","color":"#a78bfa","nodes":["settings-drawer","settings-store","mcp-client","sidebar"],"edges":[{"from":"settings-drawer","to":"settings-store","a":"saveSettings({ offlineMode: true })"},{"from":"settings-store","to":"sidebar","a":"Research category hidden from nav"},{"from":"settings-store","to":"mcp-client","a":"getApiKey() returns null → all calls short-circuit"}]},
+    {"id":"review-task-history","label":"Review Task History","desc":"Browse past 200 task runs from IndexedDB","icon":"📋","color":"#ff6b6b","nodes":["sidebar","history-drawer","history-store"],"edges":[{"from":"sidebar","to":"history-drawer","a":"click 'History' → open drawer"},{"from":"history-drawer","to":"history-store","a":"getAllEntries() → IndexedDB read"},{"from":"history-store","to":"history-drawer","a":"returns TaskEntry[] → rendered as list"}]},
+    {"id":"wireframe-to-html","label":"Wireframe to HTML","desc":"Sketch → model → functional HTML in sandboxed iframe","icon":"🎨","color":"#00d4ff","nodes":["sidebar","visual-workspace","input-panel","file-handler","task-router","prompts","worker-js","output-parser","html-preview-frame"],"edges":[{"from":"sidebar","to":"visual-workspace","a":"selectTask('wireframe_to_html')"},{"from":"visual-workspace","to":"input-panel","a":"FileUploadZone + WebcamCapture"},{"from":"input-panel","to":"file-handler","a":"readAsDataURL()"},{"from":"file-handler","to":"input-panel","a":"imageDataUrl"},{"from":"input-panel","to":"task-router","a":"buildTaskMessages()"},{"from":"task-router","to":"prompts","a":"'Convert to HTML with inline CSS...'"},{"from":"task-router","to":"worker-js","a":"postMessage with image"},{"from":"worker-js","to":"output-parser","a":"streams HTML codeblock"},{"from":"output-parser","to":"html-preview-frame","a":"HtmlPreviewFrame with sandboxed iframe"}]},
+    {"id":"redline-comparison","label":"Redline Comparison","desc":"Two docs → diff analysis with color-coded output","icon":"🔄","color":"#6fffe8","nodes":["sidebar","task-workspace","input-panel","file-handler","task-router","prompts","worker-js","output-parser","diff-view"],"edges":[{"from":"sidebar","to":"task-workspace","a":"selectTask('redline_comparison')"},{"from":"task-workspace","to":"input-panel","a":"two file uploads for doc versions"},{"from":"input-panel","to":"file-handler","a":"extractPDFText() for both docs"},{"from":"file-handler","to":"task-router","a":"two pdfText strings"},{"from":"task-router","to":"prompts","a":"'Compare two document versions...'"},{"from":"task-router","to":"worker-js","a":"postMessage comparing both texts"},{"from":"worker-js","to":"output-parser","a":"parseJSON() → RedlineResult"},{"from":"output-parser","to":"diff-view","a":"green=additions, red=deletions, blue=modifications"}]},
+    {"id":"clear-model-cache","label":"Clear Model Cache","desc":"Delete cached model shards from Cache API","icon":"🗑️","color":"#fb923c","nodes":["settings-drawer","cache-api"],"edges":[{"from":"settings-drawer","to":"cache-api","a":"caches.keys() → caches.delete(name) for each"},{"from":"cache-api","to":"none","a":"next load re-downloads ~1-2GB from CDN"}]},
+    {"id":"upload-audio-transcribe","label":"Upload Audio & Transcribe","desc":"Upload audio/video → PCM → single-pass transcription","icon":"🎵","color":"#fbbf24","nodes":["sidebar","audio-workspace","input-panel","file-handler","task-router","prompts","worker-js","output-panel"],"edges":[{"from":"sidebar","to":"audio-workspace","a":"selectTask('transcription')"},{"from":"audio-workspace","to":"input-panel","a":"FileUploadZone (audio+video MIME)"},{"from":"input-panel","to":"file-handler","a":"extractAudio() → 16kHz mono PCM"},{"from":"file-handler","to":"task-router","a":"audioData Float32Array"},{"from":"task-router","to":"prompts","a":"'Transcribe with speaker turns...'"},{"from":"task-router","to":"worker-js","a":"postMessage with audio"},{"from":"worker-js","to":"output-panel","a":"streams transcription → MarkdownRenderer"}]},
+    {"id":"object-detection","label":"Object Detection","desc":"Image → bounding boxes overlaid on canvas","icon":"🔍","color":"#f472b6","nodes":["sidebar","visual-workspace","input-panel","file-handler","task-router","prompts","worker-js","output-parser","bounding-box-canvas"],"edges":[{"from":"sidebar","to":"visual-workspace","a":"selectTask('object_detection')"},{"from":"visual-workspace","to":"input-panel","a":"FileUploadZone + WebcamCapture"},{"from":"input-panel","to":"file-handler","a":"readAsDataURL()"},{"from":"file-handler","to":"task-router","a":"imageDataUrl"},{"from":"task-router","to":"prompts","a":"'Return JSON: label, confidence, bbox'"},{"from":"task-router","to":"worker-js","a":"postMessage with image"},{"from":"worker-js","to":"output-parser","a":"parseJSON() → ObjectDetectionResult[]"},{"from":"output-parser","to":"bounding-box-canvas","a":"draws rectangles + labels on image"}]},
+    {"id":"contract-analysis","label":"Contract Analysis","desc":"PDF → risk summary, key clauses, flagged terms","icon":"⚖️","color":"#a78bfa","nodes":["sidebar","task-workspace","input-panel","file-handler","task-router","prompts","worker-js","output-parser","json-tree-view"],"edges":[{"from":"sidebar","to":"task-workspace","a":"selectTask('contract_analyzer')"},{"from":"task-workspace","to":"input-panel","a":"PDF upload"},{"from":"input-panel","to":"file-handler","a":"extractPDFText()"},{"from":"file-handler","to":"task-router","a":"pdfText"},{"from":"task-router","to":"prompts","a":"'Return JSON: summary, key_clauses, flagged_terms'"},{"from":"task-router","to":"worker-js","a":"postMessage with contract text"},{"from":"worker-js","to":"output-parser","a":"parseJSON() → ContractAnalysisResult"},{"from":"output-parser","to":"json-tree-view","a":"summary, clauses, risk flags rendered"}]}
+  ]
+};
+
+// =============================================================
+// NODE LAYOUT
+// =============================================================
+const LAYER_LABELS = ["Entry & Shell","State Providers","Pages & Drawers","Layout & Nav","Workspaces","Output Renderers","Logic Layer","Media Layer","Inference Engine","Stores & Services","External APIs"];
+
+const nodeMap = {};
+DATA.nodes.forEach(n => { nodeMap[n.id] = n; });
+
+const COLS = [[1,2,3],[1,2],[1,2,3,4,5],[1,2],[1,2,3,4,5,6],[1,2,3,4,5,6],[1,2,3,4,5,6],[1,2],[1],[1,2,3,4],[1,2,3]];
+const NODE_W = 115;
+const NODE_H = 48;
+const GAP_X = 18;
+const GAP_Y = 10;
+const COL_W = NODE_W + GAP_X;
+const ROW_H = NODE_H + GAP_Y;
+const LAYER_H = 22;
+
+function getNodePos(id) {
+  const n = nodeMap[id];
+  if (!n) return null;
+  const layer = n.layer;
+  const colGroup = COLS[layer];
+  let colIndex = -1;
+  // Count nodes in this layer to assign column
+  const layerNodes = DATA.nodes.filter(x => x.layer === layer);
+  const idx = layerNodes.indexOf(n);
+  // We'll handle this differently - find position by matching col from data
+  // Actually, let's just position based on the col field already in the data
+  return null; // handled below
+}
+
+// Simple grid layout: each layer has nodes positioned left-to-right
+const layout = {};
+const layers = {};
+DATA.nodes.forEach(n => {
+  if (!layers[n.layer]) layers[n.layer] = [];
+  layers[n.layer].push(n);
+});
+
+Object.keys(layers).sort((a,b) => a-b).forEach(layer => {
+  const nodes = layers[layer];
+  nodes.forEach((n, i) => {
+    layout[n.id] = {
+      x: 30 + i * COL_W,
+      y: 20 + parseInt(layer) * (ROW_H + LAYER_H + 8) + LAYER_H + 4,
+      w: NODE_W,
+      h: NODE_H
+    };
+  });
+});
+
+// =============================================================
+// RENDER NODES
+// =============================================================
+const nodeLayer = document.getElementById('nodes');
+const svg = document.getElementById('svg');
+const NS = svg.namespaceURI;
+
+const NODE_COLORS = {
+  entry: 'rgba(60,215,255,0.12)',
+  shell: 'rgba(111,255,232,0.1)',
+  context: 'rgba(251,191,36,0.1)',
+  page: 'rgba(96,165,250,0.1)',
+  panel: 'rgba(96,165,250,0.08)',
+  layout: 'rgba(244,114,182,0.1)',
+  workspace: 'rgba(111,255,232,0.08)',
+  renderer: 'rgba(251,191,36,0.08)',
+  logic: 'rgba(167,139,250,0.12)',
+  media: 'rgba(251,146,60,0.12)',
+  engine: 'rgba(255,107,107,0.12)',
+  store: 'rgba(96,165,250,0.08)',
+  external: 'rgba(160,160,160,0.08)'
+};
+const NODE_BORDERS = {
+  entry: 'rgba(60,215,255,0.4)',
+  shell: 'rgba(111,255,232,0.35)',
+  context: 'rgba(251,191,36,0.35)',
+  page: 'rgba(96,165,250,0.35)',
+  panel: 'rgba(96,165,250,0.25)',
+  layout: 'rgba(244,114,182,0.35)',
+  workspace: 'rgba(111,255,232,0.25)',
+  renderer: 'rgba(251,191,36,0.25)',
+  logic: 'rgba(167,139,250,0.35)',
+  media: 'rgba(251,146,60,0.35)',
+  engine: 'rgba(255,107,107,0.35)',
+  store: 'rgba(96,165,250,0.25)',
+  external: 'rgba(160,160,160,0.25)'
+};
+
+// Draw layer labels
+Object.keys(layers).sort((a,b) => a-b).forEach(layer => {
+  const y = 20 + parseInt(layer) * (ROW_H + LAYER_H + 8);
+  const label = document.createElement('div');
+  label.className = 'node layer-label';
+  label.style.left = '12px';
+  label.style.top = (y - 2) + 'px';
+  label.textContent = LAYER_LABELS[parseInt(layer)] || 'Layer ' + layer;
+  nodeLayer.appendChild(label);
+});
+
+// Draw nodes
+DATA.nodes.forEach(n => {
+  const p = layout[n.id];
+  if (!p) return;
+  const el = document.createElement('div');
+  el.className = 'node';
+  el.id = 'n-' + n.id;
+  el.style.left = p.x + 'px';
+  el.style.top = p.y + 'px';
+  el.style.width = p.w + 'px';
+  el.style.background = NODE_COLORS[n.type] || 'rgba(18,45,74,0.88)';
+  el.style.borderColor = NODE_BORDERS[n.type] || 'rgba(255,255,255,0.1)';
+  el.innerHTML = `<div class="ni">${n.icon}</div><div class="nn">${n.name}</div><div class="nt">${n.type}</div>`;
+  nodeLayer.appendChild(el);
+});
+
+// =============================================================
+// EDGE DRAWING
+// =============================================================
+function center(id) {
+  const p = layout[id];
+  if (!p) return null;
+  return { x: p.x + p.w/2, y: p.y + p.h/2 };
+}
+
+function getAnchors(fromId, toId) {
+  const f = center(fromId);
+  const t = center(toId);
+  if (!f || !t) return null;
+  const pf = layout[fromId];
+  const pt = layout[toId];
+  const dx = t.x - f.x;
+  const dy = t.y - f.y;
+
+  let fx, fy, tx, ty;
+  if (Math.abs(dx) > Math.abs(dy)) {
+    fx = f.x + pf.w/2; fy = f.y;
+    tx = t.x - pt.w/2; ty = t.y;
+  } else {
+    fx = f.x; fy = f.y + pf.h/2;
+    tx = t.x; ty = t.y - pt.h/2;
+  }
+
+  return { fx, fy, tx, ty, cx1: fx + (tx-fx)*0.35, cy1: fy, cx2: tx - (tx-fx)*0.35, cy2: ty };
+}
+
+function drawEdge(fromId, toId, color, cls) {
+  const a = getAnchors(fromId, toId);
+  if (!a) return null;
+  const p = document.createElementNS(NS, 'path');
+  p.setAttribute('d', `M ${a.fx} ${a.fy} C ${a.cx1} ${a.cy1}, ${a.cx2} ${a.cy2}, ${a.tx} ${a.ty}`);
+  p.setAttribute('class', 'flow-link ' + cls);
+  p.style.stroke = color;
+  return p;
+}
+
+function drawLabel(fromId, toId, text, color, cls, idx) {
+  const a = getAnchors(fromId, toId);
+  if (!a) return null;
+  const mx = (a.fx + a.tx) / 2;
+  const my = (a.fy + a.ty) / 2 - 10 - idx * 13;
+  const t = document.createElementNS(NS, 'text');
+  t.setAttribute('x', mx);
+  t.setAttribute('y', my);
+  t.setAttribute('text-anchor', 'middle');
+  t.setAttribute('class', 'flow-label ' + cls);
+  t.style.fill = color;
+  t.textContent = text;
+  return t;
+}
+
+// =============================================================
+// FLOW SELECTION
+// =============================================================
+let currentEls = [];
+
+function selectFlow(id) {
+  currentEls.forEach(el => { if (el.parentNode) el.parentNode.removeChild(el); });
+  currentEls = [];
+  document.querySelectorAll('.flow-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('empty').style.display = 'none';
+  document.getElementById('ann').classList.remove('vis');
+
+  document.querySelectorAll('.node').forEach(el => el.classList.remove('highlight','dim'));
+
+  const flow = DATA.flows.find(f => f.id === id);
+  if (!flow) return;
+
+  document.querySelector(`[data-fid="${id}"]`).classList.add('active');
+
+  const flowNodes = new Set(flow.nodes);
+  document.querySelectorAll('.node').forEach(el => {
+    const nid = el.id.replace('n-','');
+    if (flowNodes.has(nid)) el.classList.add('highlight');
+    else el.classList.add('dim');
+  });
+
+  const cls = 'fl-' + id;
+  flow.edges.forEach((edge, i) => {
+    const color = flow.color || '#00d4ff';
+    const p = drawEdge(edge.from, edge.to, color, cls);
+    if (p) { svg.appendChild(p); currentEls.push(p); requestAnimationFrame(() => p.classList.add('vis')); }
+
+    const l = drawLabel(edge.from, edge.to, edge.a, color, cls, i);
+    if (l) { svg.appendChild(l); currentEls.push(l); requestAnimationFrame(() => l.classList.add('vis')); }
+  });
+
+  const ann = document.getElementById('ann');
+  let html = `<div class="at">${flow.icon} ${flow.label}</div><div class="ad">${flow.desc}</div>`;
+  flow.edges.forEach((edge, i) => {
+    const c = flow.color || '#00d4ff';
+    html += `<div class="as"><span class="aa" style="color:${c}">▸</span><span class="atxt"><strong style="color:${c}">${edge.from}</strong> → <strong style="color:${c}">${edge.to}</strong>: ${edge.a}</span></div>`;
+  });
+  ann.innerHTML = html;
+  requestAnimationFrame(() => ann.classList.add('vis'));
+}
+
+// =============================================================
+// BUILD SIDEBAR
+// =============================================================
+const panel = document.getElementById('panel');
+panel.innerHTML = `<h1>⚡ Stratos Flows <small>${DATA.flows.length} actions</small></h1>`;
+DATA.flows.forEach(f => {
+  const btn = document.createElement('button');
+  btn.className = 'flow-btn';
+  btn.dataset.fid = f.id;
+  btn.innerHTML = `<span class="icon">${f.icon}</span><span><span class="label">${f.label}</span><span class="desc">${f.desc}</span></span>`;
+  btn.addEventListener('click', () => selectFlow(f.id));
+  panel.appendChild(btn);
+});
+
+// =============================================================
+// RESIZE
+// =============================================================
+function resize() {
+  const area = document.getElementById('canvas');
+  svg.setAttribute('width', area.clientWidth);
+  svg.setAttribute('height', area.clientHeight);
+}
+resize();
+window.addEventListener('resize', resize);
+</script>
+</body>
+</html>
