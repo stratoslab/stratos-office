@@ -192,6 +192,13 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     const taskId = crypto.randomUUID();
     const isPass2 = passOneOutput.current !== null;
 
+    // Timeout: if worker doesn't respond within 30s, show error
+    const timeoutId = setTimeout(() => {
+      setError('Model is not responding. Try reloading the page.');
+      setLifecycle('error');
+      workerRef.current?.removeEventListener('message', onMessage);
+    }, 30000);
+
     workerRef.current.postMessage({
       type: 'task',
       data: {
@@ -212,6 +219,8 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
 
       if (msgTaskId !== taskId) return;
 
+      clearTimeout(timeoutId);
+
       if (status === 'task_update') {
         setStreamingOutput(prev => prev + (output ?? ''));
       }
@@ -219,6 +228,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       if (status === 'task_pass1_complete') {
         passOneOutput.current = output ?? '';
         workerRef.current?.removeEventListener('message', onMessage);
+        clearTimeout(timeoutId);
 
         const pass2Messages = buildTaskMessages(activeTask, {
           text: taskInput.text,
@@ -231,6 +241,14 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
         });
 
         const pass2TaskId = crypto.randomUUID();
+
+        // New timeout for pass2
+        const pass2TimeoutId = setTimeout(() => {
+          setError('Model is not responding during pass 2. Try reloading the page.');
+          setLifecycle('error');
+          workerRef.current?.removeEventListener('message', onPass2Message);
+        }, 30000);
+
         workerRef.current?.postMessage({
           type: 'task',
           data: {
@@ -252,11 +270,13 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
           }
 
           if (s2 === 'task_complete') {
+            clearTimeout(pass2TimeoutId);
             workerRef.current?.removeEventListener('message', onPass2Message);
             finalizeOutput(o2 ?? streamingOutput, activeTask, config, n2 ?? 0, t2 ?? 0);
           }
 
           if (s2 === 'task_error') {
+            clearTimeout(pass2TimeoutId);
             workerRef.current?.removeEventListener('message', onPass2Message);
             setError(e.data.data ?? 'Task failed');
             setLifecycle('error');
@@ -268,11 +288,13 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (status === 'task_complete') {
+        clearTimeout(timeoutId);
         workerRef.current?.removeEventListener('message', onMessage);
         finalizeOutput(output ?? streamingOutput, activeTask, config, numTokens ?? 0, newTps ?? 0);
       }
 
       if (status === 'task_error') {
+        clearTimeout(timeoutId);
         workerRef.current?.removeEventListener('message', onMessage);
         setError(event.data.data ?? 'Task failed');
         setLifecycle('error');
