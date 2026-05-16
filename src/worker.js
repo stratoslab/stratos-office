@@ -230,7 +230,7 @@ async function handleTask(data) {
 
 async function prepareInputs(messages, enableThinking) {
   const lastMessage = messages.at(-1);
-  const prompt = session.processor.apply_chat_template([lastMessage], {
+  const prompt = session.processor.apply_chat_template(messages, {
     add_generation_prompt: true,
     enable_thinking: enableThinking,
   });
