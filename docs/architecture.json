@@ -47,6 +47,7 @@
     {"id":"app-tsx","name":"App.tsx","icon":"🏗️","type":"shell","layer":0,"description":"Root component. Wraps everything in ModelProvider → TaskProvider → AppContent. Routes pages by model stage (idle→Landing, downloading→Loading, ready→Dashboard). Renders TopBar, Sidebar, footer, HistoryDrawer, SettingsDrawer."},
     {"id":"model-context","name":"ModelContext","icon":"🧠","type":"context","layer":1,"description":"Manages Web Worker lifecycle. Holds GPU adapter info, download progress, retry state, tps. Exposes loadModel(), resumeDownload(), generate(), interrupt(), reset(), clearError(). Communicates with worker.js via postMessage."},
     {"id":"task-context","name":"TaskContext","icon":"📋","type":"context","layer":1,"description":"Manages active task execution. Holds activeTask, taskInput, lifecycle, streamingOutput, finalOutput, parsedOutput. Exposes selectTask(), setInput(), submitTask(), cancelTask(), clearOutput(). Handles two-pass pipeline for meeting_minutes/voice_to_email."},
+    {"id":"pipeline-context","name":"PipelineContext","icon":"🔗","type":"context","layer":1,"description":"Pipeline orchestration engine (649 lines). Manages activeTemplate, PipelineRun, step-by-step execution, output chaining, cancellation, retry/skip. Exposes loadTemplate(), setPipelineInput(), runPipeline(), cancelPipeline(), retryStep(), skipStep(), resetPipeline(). buildStepInput() routes previous step outputs using InputMappingType (text/parsed_json/raw_output/file/combined)."},
     {"id":"landing-page","name":"LandingPage","icon":"🏠","type":"page","layer":2,"description":"Pre-load hero UI. Shows 'Load Gemma 4' CTA, feature highlights, privacy messaging. Displayed when stage is idle/checking/unsupported."},
     {"id":"loading-page","name":"LoadingPage","icon":"⏳","type":"page","layer":2,"description":"Download/load progress UI. Shows progress bar, file name, ETA, GPU info. Handles download_retry and download_error states with resume button."},
     {"id":"dashboard-page","name":"DashboardPage","icon":"📊","type":"page","layer":2,"description":"Main workspace hub after model is ready. Shows 9 quick-start cards, then all 32 tasks organized into 6 category grids. Routes to category-specific workspace when a task is selected."},
@@ -59,7 +60,9 @@
     {"id":"visual-workspace","name":"VisualWorkspace","icon":"🎨","type":"workspace","layer":3,"description":"Visual task workspace. Renders TaskWorkspace + WebcamCapture for camera input."},
     {"id":"research-workspace","name":"ResearchWorkspace","icon":"🔬","type":"workspace","layer":3,"description":"Research task workspace. Renders TaskWorkspace + WebSearchSetupPrompt if TinyFish is not connected."},
     {"id":"privacy-workspace","name":"PrivacyWorkspace","icon":"🔒","type":"workspace","layer":3,"description":"Privacy task workspace. Renders TaskWorkspace with PrivacyNotice + DisclaimerBanner for medical/legal/financial tasks."},
-    {"id":"input-panel","name":"InputPanel","icon":"📥","type":"workspace","layer":3,"description":"Task input controls. Conditionally renders: FileUploadZone, AudioRecorderWidget, WebcamCapture, textarea, question input, PDFPageRangeSelector, TokenEstimateDisplay, ContextLimitWarning, PrivacyNotice, Submit button. Dynamically activates UI based on TaskConfig requirements."},
+    {"id":"pipeline-workspace","name":"PipelineWorkspace","icon":"🔗","type":"workspace","layer":3,"description":"Pipeline execution UI (175 lines). Shows PipelineStepIndicator, per-step file upload zones based on template.expectedInputs, run/cancel/retry/skip buttons. Renders PipelineOutputPanel for combined or per-step results."},
+    {"id":"pipeline-selector","name":"PipelineSelector","icon":"📋","type":"workspace","layer":3,"description":"Pipeline template gallery (93 lines). Grid of 8 built-in template cards with icons, names, step counts. 'Create Custom Pipeline' button (placeholder). Each card click → onSelect(template) → PipelineContext.loadTemplate()."},
+    {"id":"input-panel","name":"InputPanel","icon":"📥","type":"workspace","layer":3,"description":"Task input controls."},
     {"id":"output-panel","name":"OutputPanel","icon":"📤","type":"workspace","layer":3,"description":"Task output display. Conditionally routes to specialized renderers: MarkdownRenderer (text/markdown/table), JsonTreeView (json), HtmlPreviewFrame (html), DiffView (redline_comparison), BoundingBoxCanvas (object_detection). Shows StreamingOutput during generation. Includes Copy, Stop, Export buttons."},
     {"id":"export-button","name":"ExportButton","icon":"💾","type":"workspace","layer":3,"description":"Exports task output. Creates Blob from output text and triggers download via <a> click. Formats: .txt, .json, .md, .html depending on outputFormat and parsedOutput."},
     {"id":"html-preview-frame","name":"HtmlPreviewFrame","icon":"🖼️","type":"renderer","layer":4,"description":"Sandboxed iframe for wireframe_to_html output. Renders generated HTML in an isolated context via srcdoc attribute."},
@@ -68,9 +71,12 @@
     {"id":"bounding-box-canvas","name":"BoundingBoxCanvas","icon":"🔲","type":"renderer","layer":4,"description":"Canvas overlay for object_detection. Draws bounding boxes and labels over the original image using ObjectDetectionResult[] data."},
     {"id":"markdown-renderer","name":"MarkdownRenderer","icon":"📝","type":"renderer","layer":4,"description":"Renders markdown output using react-markdown + remark-gfm (tables, strikethrough) + highlight.js (code blocks)."},
     {"id":"streaming-output","name":"StreamingOutput","icon":"▶️","type":"renderer","layer":4,"description":"Live token-by-token streaming display. Shows TPS counter, blinking caret, and accumulates output in real-time during generation."},
+    {"id":"pipeline-step-indicator","name":"PipelineStepIndicator","icon":"🔢","type":"renderer","layer":4,"description":"Pipeline progress indicator (104 lines). Horizontal or vertical layout. Shows step number icons with status: pending (grey number), running (spinning blue), complete (green checkmark), error (red X), skipped (orange dash). Active step highlighted with label."},
+    {"id":"pipeline-output-panel","name":"PipelineOutputPanel","icon":"📊","type":"renderer","layer":4,"description":"Pipeline output viewer (125 lines). Expandable per-step results with MarkdownRenderer/JsonTreeView. Combined view toggle (all steps concatenated). Streaming output during active step. Error display with retry/skip controls."},
     {"id":"task-router","name":"taskRouter.ts","icon":"🔀","type":"logic","layer":5,"description":"Task routing engine. TASK_CONFIGS object (32 entries with metadata). buildTaskMessages() constructs message arrays with system prompts + multimodal content. getTokenBudget() returns per-task max_new_tokens."},
     {"id":"prompts","name":"prompts/*.ts","icon":"📝","type":"logic","layer":5,"description":"6 prompt module files. documents.ts (8), visual.ts (6), audio.ts (5), text.ts (8), research.ts (2), privacy.ts (3). getPrompt() maps TaskType to category via dynamic template interpolation (supports {question}, {tone}, {language}, {searchResults}, {pageContent})."},
-    {"id":"output-parser","name":"outputParser.ts","icon":"🧩","type":"logic","layer":5,"description":"Output parsing utilities. parseJSON() strips <think> blocks and markdown fences, finds first JSON object/array. extractText() strips think/fence blocks. markdownTableToJSON() and jsonToMarkdownTable() for table format conversion."},
+{"id":"output-parser","name":"outputParser.ts","icon":"🧩","type":"logic","layer":5,"description":"Output parsing utilities. parseJSON() strips  thinking blocks and markdown fences, finds first JSON object/array. extractText() strips think/fence blocks. markdownTableToJSON() and jsonToMarkdownTable() for table format conversion."},
+    {"id":"pipeline-templates","name":"pipelineTemplates.ts","icon":"📦","type":"logic","layer":5,"description":"8 built-in pipeline template definitions (154 lines). Each template has id, name, description, icon, expectedInputs[], and steps[] with taskType + inputMapping. Templates: Due Diligence, Meeting Intelligence, Product Discovery, Compliance Auditor, Research Synthesis, Negotiation Prep, Incident Response, Customer Intelligence."},
     {"id":"file-handler","name":"fileHandler.ts","icon":"📁","type":"media","layer":5,"description":"File validation and extraction. validate() checks MIME type against task requirements + 50MB size limit. readAsDataURL() for images. extractAudio() uses Web Audio API to decode any format → 16kHz mono Float32Array. extractPDFText() uses pdfjs-dist. estimateTokens() heuristic (chars/4)."},
     {"id":"audio-recorder","name":"audioRecorder.ts","icon":"🎤","type":"media","layer":5,"description":"AudioRecorder class. getUserMedia({audio}) → MediaRecorder + AnalyserNode for live level meter. Records up to 30 min. Supports pause/resume. stop() decodes to 16kHz mono PCM Float32Array. Fires warning at 25 min."},
     {"id":"webcam-capture","name":"webcamCapture.ts","icon":"📷","type":"media","layer":5,"description":"WebcamCapture class. getUserMedia({video}) → OffscreenCanvas.captureFrame() → data URL. Used for image-capturing tasks (OCR, chart extract, wireframe, etc.)."},
@@ -311,6 +317,66 @@
         {"from":"worker-js","to":"output-parser","annotation":"parseJSON() → ContractAnalysisResult"},
         {"from":"output-parser","to":"json-tree-view","annotation":"renders summary, clauses, risk flags with severity badges"}
       ]
+    },
+    {
+      "id": "browse-pipeline-templates",
+      "label": "Browse & Select Pipeline",
+      "description": "Dashboard → PipelineSelector gallery → pick template → PipelineWorkspace UI",
+      "icon": "📋",
+      "color": "#e879f9",
+      "nodes": ["dashboard-page","pipeline-selector","pipeline-context","pipeline-workspace"],
+      "edges": [
+        {"from":"dashboard-page","to":"pipeline-selector","annotation":"click 'Browse Pipelines' or quick-access card → setShowPipelineSelector(true)"},
+        {"from":"pipeline-selector","to":"pipeline-context","annotation":"onSelect(template) → loadTemplate(template) → activeTemplate set"},
+        {"from":"pipeline-context","to":"pipeline-workspace","annotation":"activeTemplate exists → PipelineWorkspace renders with template steps + file upload zones"}
+      ]
+    },
+    {
+      "id": "run-due-diligence",
+      "label": "Run Due Diligence Pipeline",
+      "description": "4-step chained execution: financial parse → contract analysis → legal risk → investment memo",
+      "icon": "🏦",
+      "color": "#f97316",
+      "nodes": ["dashboard-page","pipeline-context","pipeline-templates","pipeline-workspace","pipeline-step-indicator","pipeline-output-panel","task-router","prompts","worker-js"],
+      "edges": [
+        {"from":"dashboard-page","to":"pipeline-context","annotation":"selects 'Due Diligence' template → activeTemplate set"},
+        {"from":"pipeline-context","to":"pipeline-templates","annotation":"reads 4-step template: financial_parser → contract_analyzer → legal_analyzer → report_generator"},
+        {"from":"pipeline-context","to":"pipeline-workspace","annotation":"PipelineWorkspace mounts with PDF file input expected"},
+        {"from":"pipeline-workspace","to":"pipeline-context","annotation":"user uploads PDFs → runPipeline() → sequential step execution begins"},
+        {"from":"pipeline-context","to":"pipeline-step-indicator","annotation":"PipelineRun.steps updated → step status changes: pending→running→complete with icons"},
+        {"from":"pipeline-context","to":"pipeline-output-panel","annotation":"streamingOutput updated per-step → live token display"},
+        {"from":"pipeline-context","to":"task-router","annotation":"buildStepInput(0) → buildTaskMessages('financial_parser', input)"},
+        {"from":"task-router","to":"prompts","annotation":"getPrompt('financial_parser') for step 1"},
+        {"from":"task-router","to":"worker-js","annotation":"postMessage({ type: 'task' }) for step 1"},
+        {"from":"worker-js","to":"pipeline-context","annotation":"task_complete → output stored in stepOutputsRef[0]"},
+        {"from":"pipeline-context","to":"pipeline-step-indicator","annotation":"step 1 marked complete → step 2 starts running"},
+        {"from":"pipeline-context","to":"task-router","annotation":"buildStepInput(1) → passes step 0 output as input to step 1 (contract_analyzer)"},
+        {"from":"task-router","to":"worker-js","annotation":"postMessage for step 2 → step 3 → step 4"},
+        {"from":"worker-js","to":"pipeline-context","annotation":"all 4 steps complete → run status='complete', totalTokens accumulated"},
+        {"from":"pipeline-context","to":"pipeline-output-panel","annotation":"expandable per-step results shown with MarkdownRenderer/JsonTreeView"}
+      ]
+    },
+    {
+      "id": "run-meeting-intelligence",
+      "label": "Run Meeting Intelligence Pipeline",
+      "description": "4-step: transcribe audio → meeting minutes → email drafts → next meeting prep",
+      "icon": "👥",
+      "color": "#06b6d4",
+      "nodes": ["dashboard-page","pipeline-context","pipeline-templates","pipeline-workspace","pipeline-step-indicator","pipeline-output-panel","task-router","prompts","worker-js"],
+      "edges": [
+        {"from":"dashboard-page","to":"pipeline-context","annotation":"selects 'Meeting Intelligence' template"},
+        {"from":"pipeline-context","to":"pipeline-templates","annotation":"reads 4-step template: transcription → meeting_minutes → email_draft → meeting_prep"},
+        {"from":"pipeline-context","to":"pipeline-workspace","annotation":"PipelineWorkspace with audio file upload zone"},
+        {"from":"pipeline-workspace","to":"pipeline-context","annotation":"runPipeline() → step 0: transcription starts"},
+        {"from":"pipeline-context","to":"task-router","annotation":"buildStepInput(0) → buildTaskMessages('transcription', { audioData })"},
+        {"from":"task-router","to":"worker-js","annotation":"postMessage with audio Float32Array → raw transcript"},
+        {"from":"worker-js","to":"pipeline-context","annotation":"task_complete → transcript text stored in stepOutputsRef[0]"},
+        {"from":"pipeline-context","to":"task-router","annotation":"buildStepInput(1) → passes transcript as input to meeting_minutes"},
+        {"from":"task-router","to":"worker-js","annotation":"postMessage for meeting_minutes → two-pass pipeline (pass1=raw, pass2=JSON)"},
+        {"from":"worker-js","to":"pipeline-context","annotation":"structured meeting minutes JSON stored → step 2 (email_draft) receives text"},
+        {"from":"pipeline-context","to":"pipeline-step-indicator","annotation":"PipelineStepIndicator updates: steps 0-1 ✓, step 2 running..."},
+        {"from":"pipeline-context","to":"pipeline-output-panel","annotation":"expandable: step 0 (raw transcript), step 1 (minutes JSON via JsonTreeView)"}
+      ]
     }
   ],
 
@@ -412,11 +478,12 @@
     "src/types/": {"index.ts": "All TypeScript interfaces (298 lines). ModelState, TaskType union, 12+ structured output types, WorkerMessage/Response"},
     "src/context/": {"ModelContext.tsx": "Worker lifecycle", "TaskContext.tsx": "Task execution + two-pass pipeline"},
     "src/prompts/": {"index.ts": "Prompt router (32 maps)", "documents.ts": "8 prompts", "visual.ts": "6 prompts", "audio.ts": "5 prompts", "text.ts": "8 prompts", "research.ts": "2 prompts", "privacy.ts": "3 prompts"},
-    "src/components/pages/": {"LandingPage.tsx": "Pre-load hero", "LoadingPage.tsx": "Download progress", "DashboardPage.tsx": "Main workspace hub"},
+    "src/components/pages/": {"LandingPage.tsx": "Pre-load hero", "LoadingPage.tsx": "Download progress", "DashboardPage.tsx": "Main workspace hub (Pipelines section)"},
     "src/components/layout/": {"TopBar.tsx": "Header bar", "Sidebar.tsx": "Navigation sidebar"},
     "src/components/drawers/": {"HistoryDrawer.tsx": "Task history panel", "SettingsDrawer.tsx": "Settings panel (8 sections)"},
     "src/components/workspace/": {"TaskWorkspace.tsx": "Split pane", "InputPanel.tsx": "All input controls", "OutputPanel.tsx": "All output renderers", "StreamingOutput.tsx": "Live token display"},
     "src/components/tasks/": {"6 category workspaces": "All thin wrappers → TaskWorkspace"},
+    "src/components/pipelines/": {"PipelineWorkspace.tsx": "Pipeline execution UI (175 lines)", "PipelineSelector.tsx": "Template gallery (93 lines)", "PipelineStepIndicator.tsx": "Step progress (104 lines)", "PipelineOutputPanel.tsx": "Output viewer (125 lines)"},
     "src/components/ui/": {"~20 components": "FileUploadZone, AudioRecorderWidget, WebcamCapture, MarkdownRenderer, JsonTreeView, DiffView, BoundingBoxCanvas, HtmlPreviewFrame, ExportButton, MaterialIcon, PDFPageRangeSelector, TokenEstimateDisplay, ContextLimitWarning, ThinkingModeToggle, PrivacyNotice, DisclaimerBanner, StreamingOutput, Toast"},
     "src/test/": {"~16 test files": "Unit + integration + bug regression tests (Vitest + jsdom + fake-indexeddb)"},
     "public/": {"stratos-logo-white.png": "Logo", "stratos-favicon.png": "Favicon", "background.jpg": "Background image"},
@@ -424,20 +491,47 @@
   },
 
   "future_roadmap": {
-    "pipeline_engine": {
-      "spec": "specs/pipeline-engine/requirements.md",
-      "stories": [
-        "US-1: Pre-built pipeline templates (Meeting Intelligence, Due Diligence)",
-        "US-2: Drop folder of mixed files → auto-route through pipeline",
-        "US-3: Real-time step progress indicator with per-step streaming",
-        "US-4: Chain step N output as step N+1 input (text + JSON passthrough)",
-        "US-5: Custom pipeline builder (drag-and-drop task ordering, saved to localStorage)",
-        "US-6: Graceful partial failure (retry/skip/abort per step)",
-        "US-7: Export full pipeline as markdown/PDF/JSON",
-        "US-8: Pipeline history + re-run capability"
+  "pipeline_engine": {
+      "status": "IMPLEMENTED — Phase 1-3 complete",
+      "files": [
+        "src/types/index.ts (PipelineLifecycle, PipelineTemplate, PipelineStepRun, PipelineRun types)",
+        "src/pipelineTemplates.ts (8 built-in templates)",
+        "src/context/PipelineContext.tsx (full orchestration engine, 649 lines)",
+        "src/components/pipelines/PipelineWorkspace.tsx",
+        "src/components/pipelines/PipelineSelector.tsx",
+        "src/components/pipelines/PipelineStepIndicator.tsx",
+        "src/components/pipelines/PipelineOutputPanel.tsx",
+        "src/components/pages/DashboardPage.tsx (Pipelines section + routing)",
+        "src/taskRouter.ts (buildTaskMessages extended with pipelineContext parameter)"
       ],
-      "correctness": ["Output Chaining Integrity", "Cancellation Safety", "Memory Safety", "Type Compatibility", "Idempotent Re-Runs", "No Cross-Session Contamination"],
-      "out_of_scope": ["Parallel execution", "Conditional branching", "Loop constructs", "External API chaining", "Real-time collaboration", "Versioning"]
+      "builtin_templates": [
+        "Due Diligence Engine (4 steps: financial_parser → contract_analyzer → legal_analyzer → report_generator)",
+        "Meeting Intelligence (4 steps: transcription → meeting_minutes → email_draft → meeting_prep)",
+        "Product Discovery Sprint (4 steps: whiteboard_ocr → wireframe_to_html → screen_analysis → report_generator)",
+        "Compliance Auditor (4 steps: contract_analyzer → legal_analyzer → medical_summarizer → report_generator)",
+        "Research Synthesis (4 steps: research → deep_doc_qa → chart_extract → report_generator)",
+        "Negotiation Prep (4 steps: contract_analyzer → transcription → tone_rewriter → email_draft)",
+        "Incident Response (4 steps: screen_analysis → code_review → report_generator → email_draft)",
+        "Customer Intelligence (4 steps: transcription → summarize → tone_rewriter → email_reply)"
+      ],
+      "input_mapping_types": ["text", "parsed_json", "raw_output", "file", "combined"],
+      "features_completed": [
+        "8 pre-built pipeline templates with step previews",
+        "PipelineContext with sequential execution, output chaining",
+        "PipelineStepIndicator with status icons (pending/running/complete/error/skipped)",
+        "PipelineOutputPanel with expandable steps + combined view",
+        "PipelineWorkspace with file input per expectedInputs type",
+        "Dashboard integration with quick-access cards + PipelineSelector grid",
+        "Cancel, retry, skip per-step",
+        "buildTaskMessages pipelineContext parameter for template variable resolution",
+        "129 tests pass, TypeScript clean, build succeeds"
+      ],
+      "deferred_to_next_iteration": [
+        "Custom pipeline builder (drag-and-drop task ordering)",
+        "Pipeline history in drawer",
+        "Multi-format export (PDF, JSON)"
+      ],
+      "out_of_scope": ["Parallel execution", "Conditional branching", "Loop constructs"]
     }
   },
 
