@@ -3,9 +3,10 @@ import { useModel } from "../../context/ModelContext";
 import MaterialIcon from "../ui/MaterialIcon";
 
 export default function LoadingPage() {
-  const { state, loadModel, clearError } = useModel();
+  const { state, loadModel, resumeDownload, clearError } = useModel();
 
   const rounded = Math.round(state.progress);
+  const isDownloadError = state.downloadError !== null;
 
   if (state.stage === "error") {
     return (
@@ -13,43 +14,84 @@ export default function LoadingPage() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="min-h-screen flex flex-col justify-center items-center overflow-hidden p-4"
+        className="w-full h-full flex flex-col justify-center items-center overflow-hidden p-4"
       >
         <div className="w-full max-w-xl flex flex-col items-center">
           <div className="flex items-center gap-3 mb-10">
             <div
               className="w-12 h-12 rounded-xl flex items-center justify-center"
               style={{
-                background: "var(--error-container)",
-                boxShadow: "0 0 20px rgba(255, 180, 171, 0.4)",
+                background: isDownloadError ? "var(--warning-container)" : "var(--error-container)",
+                boxShadow: isDownloadError ? "0 0 20px rgba(255, 212, 130, 0.4)" : "0 0 20px rgba(255, 180, 171, 0.4)",
               }}
             >
-              <MaterialIcon name="warning" size={32} style={{ color: "var(--on-error-container)" }} />
+              <MaterialIcon
+                name={isDownloadError ? "wifi_off" : "warning"}
+                size={32}
+                style={{ color: isDownloadError ? "var(--on-warning-container)" : "var(--on-error-container)" }}
+              />
             </div>
-            <span className="text-2xl font-bold tracking-tight" style={{ color: "var(--error)" }}>
-              Loading Failed
+            <span className="text-2xl font-bold tracking-tight" style={{ color: isDownloadError ? "var(--warning)" : "var(--error)" }}>
+              {isDownloadError ? "Download Interrupted" : "Loading Failed"}
             </span>
           </div>
 
           <div className="glass-panel w-full rounded-2xl p-10 flex flex-col items-center">
-            <p className="text-center mb-6" style={{ color: "var(--on-surface-variant)" }}>
-              {state.error || "An unknown error occurred."}
-            </p>
-            <div className="flex gap-4">
-              <button
-                onClick={() => {
-                  clearError();
-                  loadModel();
-                }}
-                className="px-8 py-3 rounded-xl font-bold transition-all flex items-center gap-2"
-                style={{ background: "var(--primary-container)", color: "var(--on-primary-container)" }}
-                onMouseEnter={(e) => (e.currentTarget.style.filter = "brightness(1.1)")}
-                onMouseLeave={(e) => (e.currentTarget.style.filter = "brightness(1)")}
-              >
-                <MaterialIcon name="refresh" size={18} />
-                Retry
-              </button>
-            </div>
+            {isDownloadError ? (
+              <>
+                <p className="text-center mb-2" style={{ color: "var(--on-surface-variant)" }}>
+                  {state.downloadError.message}
+                </p>
+                {state.downloadError.cachedPercent > 0 && (
+                  <p className="text-center mb-6 text-sm" style={{ color: "var(--primary-fixed-dim)" }}>
+                    {state.downloadError.cachedPercent}% already cached — resuming will continue from where it left off.
+                  </p>
+                )}
+                <div className="flex gap-4">
+                  <button
+                    onClick={resumeDownload}
+                    className="px-8 py-3 rounded-xl font-bold transition-all flex items-center gap-2"
+                    style={{ background: "var(--primary-container)", color: "var(--on-primary-container)" }}
+                    onMouseEnter={(e) => (e.currentTarget.style.filter = "brightness(1.1)")}
+                    onMouseLeave={(e) => (e.currentTarget.style.filter = "brightness(1)")}
+                  >
+                    <MaterialIcon name="download" size={18} />
+                    Resume Download
+                  </button>
+                  <button
+                    onClick={() => { clearError(); loadModel(); }}
+                    className="px-6 py-3 rounded-xl font-bold transition-all flex items-center gap-2"
+                    style={{ background: "var(--surface-container-highest)", color: "var(--on-surface)" }}
+                    onMouseEnter={(e) => (e.currentTarget.style.filter = "brightness(1.1)")}
+                    onMouseLeave={(e) => (e.currentTarget.style.filter = "brightness(1)")}
+                  >
+                    <MaterialIcon name="refresh" size={18} />
+                    Start Over
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="text-center mb-6" style={{ color: "var(--on-surface-variant)" }}>
+                  {state.error || "An unknown error occurred."}
+                </p>
+                <div className="flex gap-4">
+                  <button
+                    onClick={() => {
+                      clearError();
+                      loadModel();
+                    }}
+                    className="px-8 py-3 rounded-xl font-bold transition-all flex items-center gap-2"
+                    style={{ background: "var(--primary-container)", color: "var(--on-primary-container)" }}
+                    onMouseEnter={(e) => (e.currentTarget.style.filter = "brightness(1.1)")}
+                    onMouseLeave={(e) => (e.currentTarget.style.filter = "brightness(1)")}
+                  >
+                    <MaterialIcon name="refresh" size={18} />
+                    Retry
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </motion.main>
@@ -61,7 +103,7 @@ export default function LoadingPage() {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="min-h-screen flex flex-col justify-center items-center overflow-hidden p-4"
+      className="w-full h-full flex flex-col justify-center items-center overflow-hidden p-4"
     >
       {/* Background blobs */}
       <div className="fixed inset-0 z-[-1] pointer-events-none">
@@ -129,19 +171,30 @@ export default function LoadingPage() {
 
           {/* Status text */}
           <div className="text-center space-y-2">
-            <p style={{ color: "var(--on-surface-variant)" }}>
-              {state.currentFile || "Downloading model files… This happens once and is cached."}
-            </p>
-            {state.estimatedTimeRemaining && (
-              <div
-                className="flex items-center justify-center gap-2"
-                style={{ color: "var(--outline)" }}
-              >
-                <MaterialIcon name="schedule" size={16} />
-                <span className="text-[10px] font-bold uppercase tracking-wider">
-                  Estimated time remaining: {state.estimatedTimeRemaining}
+            {state.downloadRetry?.active ? (
+              <div className="flex items-center justify-center gap-2" style={{ color: "var(--warning)" }}>
+                <MaterialIcon name="wifi_find" size={16} />
+                <span className="text-sm">
+                  Connection lost — retrying ({state.downloadRetry.attempt}/{state.downloadRetry.maxRetries}) in {state.downloadRetry.delay}s…
                 </span>
               </div>
+            ) : (
+              <>
+                <p style={{ color: "var(--on-surface-variant)" }}>
+                  {state.currentFile || "Downloading model files… This happens once and is cached."}
+                </p>
+                {state.estimatedTimeRemaining && (
+                  <div
+                    className="flex items-center justify-center gap-2"
+                    style={{ color: "var(--outline)" }}
+                  >
+                    <MaterialIcon name="schedule" size={16} />
+                    <span className="text-[10px] font-bold uppercase tracking-wider">
+                      Estimated time remaining: {state.estimatedTimeRemaining}
+                    </span>
+                  </div>
+                )}
+              </>
             )}
           </div>
 

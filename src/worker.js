@@ -1,4 +1,6 @@
 const MODEL_ID = "onnx-community/gemma-4-E2B-it-ONNX";
+const MAX_RETRIES = 5;
+const BASE_RETRY_DELAY = 2000; // 2s, doubles each retry (2s, 4s, 8s, 16s, 32s)
 
 let transformersLoaded = false;
 let AutoProcessor, Gemma4ForConditionalGeneration, InterruptableStoppingCriteria, TextStreamer, load_image, read_audio, env;
@@ -14,6 +16,36 @@ async function loadTransformers() {
   read_audio = transformers.read_audio;
   env = transformers.env;
   env.allowLocalModels = false;
+
+  // Wrap fetch with retry logic for resilient downloads on bad connections
+  const originalFetch = env.fetch ?? globalThis.fetch.bind(globalThis);
+  env.fetch = async (url, options = {}) => {
+    let lastError;
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        const response = await originalFetch(url, options);
+        if (!response.ok && response.status < 500) return response; // client error, don't retry
+        if (response.ok) return response;
+        lastError = new Error(`HTTP ${response.status} for ${url}`);
+      } catch (err) {
+        lastError = err;
+      }
+      if (attempt < MAX_RETRIES) {
+        const delay = BASE_RETRY_DELAY * Math.pow(2, attempt);
+        self.postMessage({
+          status: "download_retry",
+          url,
+          attempt: attempt + 1,
+          maxRetries: MAX_RETRIES,
+          delay: Math.round(delay / 1000),
+          reason: lastError.message,
+        });
+        await new Promise(r => setTimeout(r, delay));
+      }
+    }
+    throw lastError;
+  };
+
   transformersLoaded = true;
 }
 
@@ -89,17 +121,30 @@ class ModelSession {
       }
     };
 
-    const [processor, model] = await Promise.all([
-      AutoProcessor.from_pretrained(MODEL_ID, { progress_callback }),
-      Gemma4ForConditionalGeneration.from_pretrained(MODEL_ID, {
-        dtype: "q4f16",
-        device: "webgpu",
-        progress_callback,
-      }),
-    ]);
-    this.processor = processor;
-    this.model = model;
-    self.postMessage({ status: "ready" });
+    try {
+      const [processor, model] = await Promise.all([
+        AutoProcessor.from_pretrained(MODEL_ID, { progress_callback }),
+        Gemma4ForConditionalGeneration.from_pretrained(MODEL_ID, {
+          dtype: "q4f16",
+          device: "webgpu",
+          progress_callback,
+        }),
+      ]);
+      this.processor = processor;
+      this.model = model;
+      self.postMessage({ status: "ready" });
+    } catch (err) {
+      // Transformers.js caches partial downloads, so retrying will resume
+      // Tell the main thread what happened and what percent was cached
+      const cachedPercent = [...fileProgress.values()].reduce((s, e) => s + e.loaded, 0) /
+        Math.max(1, [...fileProgress.values()].reduce((s, e) => s + e.total, 0));
+      self.postMessage({
+        status: "download_error",
+        data: err.message ?? "Download failed",
+        cachedPercent: Math.round(cachedPercent * 100),
+      });
+      throw err;
+    }
   }
 
   interrupt() {
