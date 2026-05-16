@@ -70,8 +70,8 @@ export default function InputPanel({ taskType }: InputPanelProps) {
         if (result.pageCount <= 50) {
           setInput({ pdfText: result.text });
         }
-      } catch {
-        setError('Failed to extract PDF text');
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Failed to extract PDF text');
       }
     }
 
@@ -118,6 +118,8 @@ export default function InputPanel({ taskType }: InputPanelProps) {
       extractPDFText(taskInput.file, pdfRange).then(result => {
         setInput({ pdfText: result.text });
         setTimeout(() => submitTask(), 100);
+      }).catch(e => {
+        setError(e instanceof Error ? e.message : 'Failed to extract PDF text');
       });
     } else {
       submitTask();

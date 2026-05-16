@@ -157,5 +157,11 @@ export async function extractPDFText(
     text += pageText + '\n';
   }
 
+  // Check if extracted text is meaningful (scanned PDFs return empty or near-empty text)
+  const meaningfulChars = text.replace(/\s/g, '').length;
+  if (meaningfulChars < 10 && pageCount > 0) {
+    throw new Error('PDF appears to be scanned images with no text layer. Please use an OCR tool first or upload a text-based PDF.');
+  }
+
   return { text, pageCount };
 }

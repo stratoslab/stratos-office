@@ -131,7 +131,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
         pdfText = result.text;
         pdfPageCount = result.pageCount;
       } catch (e) {
-        setError('Failed to extract PDF text');
+        setError(e instanceof Error ? e.message : 'Failed to extract PDF text');
         setLifecycle('error');
         return;
       }
