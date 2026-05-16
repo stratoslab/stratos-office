@@ -18,6 +18,9 @@ export interface ModelState {
   tps: number | null;
   numTokens: number | null;
   isGenerating: boolean;
+  gpuAdapter: string | null;
+  gpuBackend: string | null;
+  shaderF16: boolean | null;
 }
 
 export type TaskType =
@@ -272,7 +275,7 @@ export interface TaskWorkerMessage {
 export interface WorkerResponse {
   status: 'check' | 'loading' | 'init' | 'progress' | 'ready' |
           'start' | 'update' | 'complete' | 'error' |
-          'task_start' | 'task_update' | 'task_complete' | 'task_error';
+          'task_start' | 'task_update' | 'task_complete' | 'task_pass1_complete' | 'task_error';
   data?: unknown;
   progress?: number;
   output?: string;
@@ -280,4 +283,8 @@ export interface WorkerResponse {
   tps?: number;
   taskId?: string;
   supported?: boolean;
+  shaderF16?: boolean;
+  adapter?: string;
+  backend?: string;
+  reason?: string;
 }

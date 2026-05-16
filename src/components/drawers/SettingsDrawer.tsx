@@ -97,8 +97,26 @@ export default function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps)
                 </div>
                 <div className="flex justify-between">
                   <span className="text-sm font-medium" style={{ color: 'var(--on-surface)' }}>WebGPU Status</span>
-                  <span className={`text-xs font-bold ${state.stage === 'ready' ? 'text-green-400' : 'text-amber-400'}`}>{state.stage === 'ready' ? 'Available' : state.stage}</span>
+                  <span className={`text-xs font-bold ${state.stage === 'ready' ? 'text-green-400' : state.stage === 'unsupported' ? 'text-red-400' : 'text-amber-400'}`}>{state.stage === 'ready' ? 'Available' : state.stage}</span>
                 </div>
+                {state.gpuAdapter && (
+                  <div className="flex justify-between">
+                    <span className="text-xs" style={{ color: 'var(--on-surface-variant)' }}>GPU</span>
+                    <span className="text-xs font-mono" style={{ color: 'var(--on-surface-variant)' }}>{state.gpuAdapter}</span>
+                  </div>
+                )}
+                {state.gpuBackend && (
+                  <div className="flex justify-between">
+                    <span className="text-xs" style={{ color: 'var(--on-surface-variant)' }}>Backend</span>
+                    <span className="text-xs font-mono" style={{ color: 'var(--on-surface-variant)' }}>{state.gpuBackend}</span>
+                  </div>
+                )}
+                {state.shaderF16 !== null && (
+                  <div className="flex justify-between">
+                    <span className="text-xs" style={{ color: 'var(--on-surface-variant)' }}>shader-f16</span>
+                    <span className={`text-xs font-bold ${state.shaderF16 ? 'text-green-400' : 'text-red-400'}`}>{state.shaderF16 ? 'Supported' : 'Not supported'}</span>
+                  </div>
+                )}
                 {state.tps !== null && state.tps > 0 && (
                   <div className="flex justify-between">
                     <span className="text-sm font-medium" style={{ color: 'var(--on-surface)' }}>Current TPS</span>

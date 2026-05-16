@@ -126,14 +126,16 @@ describe('Preservation — non-buggy worker message mappings (Bug 1 / Bug 3 base
   // -------------------------------------------------------------------------
   // Requirement 3.1 — { status: "check", supported: true } → stage: "idle"
   // -------------------------------------------------------------------------
-  it('maps { status: "check", supported: true } → stage "idle"', async () => {
+  it('maps { status: "check", supported: true, shaderF16: true } → stage "idle"', async () => {
     const { capture, worker } = await renderModelProvider();
 
     await act(async () => {
-      worker.dispatchMessage({ status: 'check', supported: true });
+      worker.dispatchMessage({ status: 'check', supported: true, shaderF16: true, adapter: 'Test GPU', backend: 'd3d12' });
     });
 
     expect(capture.current?.stage).toBe('idle');
+    expect(capture.current?.gpuAdapter).toBe('Test GPU');
+    expect(capture.current?.shaderF16).toBe(true);
   });
 
   // -------------------------------------------------------------------------
@@ -143,10 +145,22 @@ describe('Preservation — non-buggy worker message mappings (Bug 1 / Bug 3 base
     const { capture, worker } = await renderModelProvider();
 
     await act(async () => {
-      worker.dispatchMessage({ status: 'check', supported: false });
+      worker.dispatchMessage({ status: 'check', supported: false, reason: 'No WebGPU' });
     });
 
     expect(capture.current?.stage).toBe('unsupported');
+  });
+
+  it('maps { status: "check", supported: true, shaderF16: false } → stage "unsupported" with shader-f16 error', async () => {
+    const { capture, worker } = await renderModelProvider();
+
+    await act(async () => {
+      worker.dispatchMessage({ status: 'check', supported: true, shaderF16: false, adapter: 'Intel UHD', backend: 'metal' });
+    });
+
+    expect(capture.current?.stage).toBe('unsupported');
+    expect(capture.current?.error).toContain('shader-f16');
+    expect(capture.current?.shaderF16).toBe(false);
   });
 
   // -------------------------------------------------------------------------

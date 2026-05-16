@@ -268,12 +268,32 @@ self.addEventListener("message", async (event) => {
 
   try {
     switch (type) {
-      case "check":
-        self.postMessage({
-          status: "check",
-          supported: Boolean(navigator.gpu),
-        });
+      case "check": {
+        const hasGPU = Boolean(navigator.gpu);
+        if (!hasGPU) {
+          self.postMessage({ status: "check", supported: false, reason: "WebGPU not available" });
+          break;
+        }
+        try {
+          const adapter = await navigator.gpu.requestAdapter();
+          if (!adapter) {
+            self.postMessage({ status: "check", supported: false, reason: "No GPU adapter found" });
+            break;
+          }
+          // Gemma 4 requires shader-f16 for fp16 inference (confirmed by Gemma Gem project)
+          const hasShaderF16 = adapter.features.has("shader-f16");
+          self.postMessage({
+            status: "check",
+            supported: true,
+            shaderF16: hasShaderF16,
+            adapter: adapter.info.device,
+            backend: adapter.info.backend,
+          });
+        } catch (e) {
+          self.postMessage({ status: "check", supported: false, reason: e.message });
+        }
         break;
+      }
       case "load":
         await session.load();
         break;
