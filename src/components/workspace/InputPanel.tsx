@@ -13,10 +13,17 @@ import ContextLimitWarning from '../ui/ContextLimitWarning';
 import PrivacyNotice from '../ui/PrivacyNotice';
 import { loadSettings } from '../../settingsStore';
 
+const IMAGE_MIMES = new Set(['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/gif', 'image/bmp']);
+const AUDIO_MIMES = new Set([
+  'audio/webm', 'audio/wav', 'audio/x-wav', 'audio/mp3', 'audio/mpeg',
+  'audio/ogg', 'audio/opus', 'audio/x-m4a', 'audio/m4a', 'audio/mp4',
+  'audio/aac', 'audio/x-aac', 'audio/flac', 'audio/x-flac',
+]);
 const VIDEO_MIMES = new Set([
   'video/mp4', 'video/webm', 'video/quicktime', 'video/x-m4v',
   'video/x-msvideo', 'video/x-matroska', 'video/avi',
 ]);
+const TEXT_MIMES = new Set(['text/plain', 'text/markdown', 'text/html', 'text/csv']);
 
 interface InputPanelProps {
   taskType: TaskType;
@@ -32,10 +39,29 @@ export default function InputPanel({ taskType }: InputPanelProps) {
   const [pdfTokenEstimate, setPdfTokenEstimate] = useState(0);
 
   const handleFile = useCallback(async (file: File, dataUrl: string) => {
-    setInput({ file, imageDataUrl: dataUrl });
+    setInput({ file });
     setError(null);
 
-    if (config.requiresPDF) {
+    // Only set imageDataUrl for actual image files — prevents audio/PDF/text
+    // data URLs from being sent as images to the model
+    if (IMAGE_MIMES.has(file.type)) {
+      setInput({ imageDataUrl: dataUrl });
+    }
+
+    // Extract audio from both audio files AND video files
+    if (config.requiresAudio && (AUDIO_MIMES.has(file.type) || VIDEO_MIMES.has(file.type))) {
+      try {
+        setError('Extracting audio...');
+        const pcm = await extractAudio(file);
+        setInput({ audioData: pcm });
+        setError(null);
+      } catch {
+        setError('Failed to extract audio from file. The file may not contain an audio track.');
+      }
+    }
+
+    // Extract text from PDF files
+    if (config.requiresPDF && file.type === 'application/pdf') {
       try {
         const result = await extractPDFText(file);
         setPdfPageCount(result.pageCount);
@@ -49,17 +75,21 @@ export default function InputPanel({ taskType }: InputPanelProps) {
       }
     }
 
-    if (config.requiresAudio && VIDEO_MIMES.has(file.type)) {
+    // Extract content from text files for tasks that accept them
+    if (TEXT_MIMES.has(file.type)) {
       try {
-        setError('Extracting audio from video…');
-        const pcm = await extractAudio(file);
-        setInput({ audioData: pcm });
-        setError(null);
+        const text = await file.text();
+        if (config.requiresPDF) {
+          // For PDF tasks that also accept text files, store as pdfText
+          setInput({ pdfText: text });
+        } else if (config.requiresText) {
+          setInput({ text });
+        }
       } catch {
-        setError('Failed to extract audio from video. The file may not contain an audio track.');
+        setError('Failed to read text file');
       }
     }
-  }, [config.requiresPDF, config.requiresAudio, setInput]);
+  }, [config.requiresPDF, config.requiresAudio, config.requiresText, setInput]);
 
   const handleAudio = useCallback((pcm: Float32Array) => {
     setInput({ audioData: pcm });
@@ -100,10 +130,14 @@ export default function InputPanel({ taskType }: InputPanelProps) {
 
   const isSubmitDisabled = isDisabled || isResearchOffline ||
     (config.requiresAudio && isRecording) ||
-    (config.requiresImage && !taskInput.imageDataUrl) ||
     (config.requiresAudio && !taskInput.audioData) ||
     (config.requiresText && !taskInput.text) ||
-    (config.requiresPDF && !taskInput.pdfText && !taskInput.file);
+    // Mixed image+PDF tasks: need either image or PDF text
+    (config.requiresImage && config.requiresPDF && !taskInput.imageDataUrl && !taskInput.pdfText) ||
+    // Image-only tasks: need imageDataUrl
+    (config.requiresImage && !config.requiresPDF && !taskInput.imageDataUrl) ||
+    // PDF-only tasks: need pdfText or file
+    (config.requiresPDF && !config.requiresImage && !taskInput.pdfText && !taskInput.file);
 
   const submitTitle = (config.requiresAudio && isRecording)
     ? 'Stop recording first'
@@ -143,6 +177,17 @@ export default function InputPanel({ taskType }: InputPanelProps) {
           )}
           <ContextLimitWarning tokenCount={pdfTokenEstimate} pageCount={pdfPageCount} />
         </div>
+      )}
+
+      {config.requiresText && config.requiresPDF && (
+        <input
+          type="text"
+          value={taskInput.question ?? ''}
+          onChange={(e) => setInput({ question: e.target.value })}
+          placeholder="Enter your question..."
+          className="w-full bg-white/5 border border-white/20 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-500 focus:border-[#00D4FF] focus:outline-none"
+          aria-label="Question"
+        />
       )}
 
       {config.requiresText && !config.requiresPDF && (
