@@ -137,9 +137,8 @@ export async function extractPDFText(
   file: File,
   pageRange?: { start: number; end: number }
 ): Promise<{ text: string; pageCount: number }> {
-  const pdfjsLib = await import('pdfjs-dist');
-  const pdfjsWorker = await import('pdfjs-dist/build/pdf.worker.mjs');
-  pdfjsLib.GlobalWorkerOptions.workerPort = new pdfjsWorker.WorkerMessagePort();
+  // Use the legacy build which bundles the worker inline — no manual worker setup needed
+  const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs');
 
   const arrayBuffer = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;

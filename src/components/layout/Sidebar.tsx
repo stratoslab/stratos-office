@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { TaskType, TaskCategory } from '../../types';
 import { useTask } from '../../context/TaskContext';
+import { usePipeline } from '../../context/PipelineContext';
 import { TASK_CONFIGS } from '../../taskRouter';
 import { useModel } from '../../context/ModelContext';
 import { loadSettings } from '../../settingsStore';
@@ -26,9 +27,16 @@ const categories: { key: TaskCategory; label: string; icon: string }[] = [
 export default function Sidebar({ onOpenHistory, onOpenSettings, mobileOpen, onMobileClose }: SidebarProps) {
   const { state } = useModel();
   const { activeTask, selectTask } = useTask();
+  const { activeTemplate, resetPipeline } = usePipeline();
   const [expandedCategory, setExpandedCategory] = useState<TaskCategory | null>('documents');
   const isReady = state.stage === 'ready';
   const settings = loadSettings();
+
+  const goHome = () => {
+    selectTask(null);
+    resetPipeline();
+    onMobileClose?.();
+  };
 
   const toggleCategory = (key: TaskCategory) => {
     if (key === 'research' && settings.offlineMode) return;
@@ -53,7 +61,7 @@ export default function Sidebar({ onOpenHistory, onOpenSettings, mobileOpen, onM
       {/* Header with close button on mobile */}
       <div className="px-4 md:px-6 mb-4 md:mb-6 mt-4 md:mt-0">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 cursor-pointer" onClick={goHome}>
             <div
               className="w-10 h-10 rounded-xl flex items-center justify-center overflow-hidden"
               style={{
@@ -87,6 +95,20 @@ export default function Sidebar({ onOpenHistory, onOpenSettings, mobileOpen, onM
       </div>
 
       <nav className="flex-1 px-3 space-y-1 overflow-y-auto">
+        {/* Pipelines section */}
+        <button
+          onClick={() => { selectTask(null); resetPipeline(); onMobileClose?.(); }}
+          className="w-full flex items-center gap-3 px-3 py-3 md:py-2 rounded-lg transition-colors min-h-[44px] mb-2"
+          style={{
+            color: activeTemplate ? 'var(--primary-fixed-dim)' : 'var(--on-surface-variant)',
+            background: activeTemplate ? 'rgba(0, 212, 255, 0.1)' : 'transparent',
+          }}
+        >
+          <MaterialIcon name="account_tree" size={20} />
+          <span className="text-sm font-medium flex-1 text-left">Pipelines</span>
+          <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(0,229,204,0.1)', color: 'var(--secondary)' }}>8</span>
+        </button>
+
         {visibleCategories.map(cat => {
           const tasks = Object.values(TASK_CONFIGS).filter(t => t.category === cat.key);
           const isExpanded = expandedCategory === cat.key;
