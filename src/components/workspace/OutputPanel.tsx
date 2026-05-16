@@ -16,13 +16,13 @@ interface OutputPanelProps {
 }
 
 export default function OutputPanel({ taskType }: OutputPanelProps) {
-  const { streamingOutput, finalOutput, parsedOutput, lifecycle, tps, cancelTask, taskInput, error } = useTask();
+  const { streamingOutput, finalOutput, parsedOutput, lifecycle, tps, cancelTask, taskInput, error, chunkProgress } = useTask();
   const config = getTaskConfig(taskType);
   const isGenerating = lifecycle === 'generating';
   const isSubmitting = lifecycle === 'submitting';
   const output = finalOutput || streamingOutput;
 
-  console.log('[OutputPanel] render', { lifecycle, hasOutput: !!output, hasError: !!error, streamingLength: streamingOutput.length });
+  console.log('[OutputPanel] render', { lifecycle, hasOutput: !!output, hasError: !!error, streamingLength: streamingOutput.length, chunkProgress });
 
   const handleCopy = () => {
     navigator.clipboard.writeText(output);
@@ -65,6 +65,46 @@ export default function OutputPanel({ taskType }: OutputPanelProps) {
         <p className="text-xs" style={{ color: 'var(--outline)' }}>
           {taskInput.file?.type === 'application/pdf' ? 'Extracting text from PDF' : 'Preparing task for model'}
         </p>
+      </div>
+    );
+  }
+
+  if (chunkProgress && isGenerating) {
+    return (
+      <div className="bg-[#0A2540]/50 rounded-xl p-4 md:p-6 min-h-[200px] flex flex-col items-center justify-center gap-4">
+        <div className="w-full max-w-md">
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-sm font-medium" style={{ color: 'var(--on-surface)' }}>
+              Analyzing document...
+            </p>
+            <p className="text-xs" style={{ color: 'var(--outline)' }}>
+              Section {chunkProgress.current} of {chunkProgress.total}
+            </p>
+          </div>
+          <div className="w-full bg-white/10 rounded-full h-2 overflow-hidden">
+            <div
+              className="h-full rounded-full transition-all duration-500"
+              style={{
+                width: `${(chunkProgress.current / chunkProgress.total) * 100}%`,
+                background: 'var(--primary-fixed-dim)',
+              }}
+            />
+          </div>
+        </div>
+        {streamingOutput && (
+          <div className="w-full max-w-md mt-2 p-3 rounded-lg bg-white/5 max-h-[200px] overflow-y-auto">
+            <p className="text-xs whitespace-pre-wrap" style={{ color: 'var(--on-surface-variant)' }}>
+              {streamingOutput}
+            </p>
+          </div>
+        )}
+        <button
+          onClick={cancelTask}
+          className="flex items-center gap-1 px-3 py-1.5 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 transition-colors text-sm"
+        >
+          <span className="material-symbols-outlined text-sm">stop</span>
+          Cancel
+        </button>
       </div>
     );
   }

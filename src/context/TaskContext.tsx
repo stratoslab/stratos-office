@@ -7,6 +7,7 @@ import { addEntry } from '../historyStore';
 import { validate, readAsDataURL, extractPDFText } from '../fileHandler';
 import { loadSettings } from '../settingsStore';
 import { search, fetchMultiple, McpAuthError, McpNetworkError } from '../mcpClient';
+import { chunkDocument, needsChunking, estimateTokens } from '../documentChunker';
 
 export interface TaskInput {
   text?: string;
@@ -32,6 +33,7 @@ interface TaskContextValue {
   error: string | null;
   tokenCount: number | null;
   tps: number | null;
+  chunkProgress: { current: number; total: number } | null;
   selectTask: (taskType: TaskType | null) => void;
   setInput: (partial: Partial<TaskInput>) => void;
   submitTask: () => Promise<void>;
@@ -61,6 +63,11 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
   const [tokenCount, setTokenCount] = useState<number | null>(null);
   const [tps, setTps] = useState<number | null>(null);
   const passOneOutput = useRef<string | null>(null);
+  
+  // Chunk processing state for large documents
+  const [chunkProgress, setChunkProgress] = useState<{ current: number; total: number } | null>(null);
+  const chunkResultsRef = useRef<string[]>([]);
+  const totalChunksRef = useRef<number>(0);
 
   const selectTask = useCallback((taskType: TaskType | null) => {
     setActiveTask(taskType);
@@ -98,7 +105,162 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     setTokenCount(null);
     setTps(null);
     passOneOutput.current = null;
+    chunkResultsRef.current = [];
+    totalChunksRef.current = 0;
+    setChunkProgress(null);
   }, []);
+
+  // Process document in chunks for large files
+  const processChunks = useCallback(async (
+    chunks: Array<{ index: number; total: number; text: string; tokenEstimate: number }>,
+    config: TaskConfig,
+    settings: { offlineMode: boolean; thinkingModeDefault: boolean; theme: string },
+    imageDataUrl: string | undefined,
+    audioData: Float32Array | undefined,
+    searchResults: string,
+    pageContent: string
+  ) => {
+    const allResults: string[] = [];
+    let totalTokens = 0;
+    let totalTps = 0;
+
+    for (let i = 0; i < chunks.length; i++) {
+      const chunk = chunks[i];
+      console.log('[TaskContext] Processing chunk', i + 1, 'of', chunks.length);
+      setChunkProgress({ current: i + 1, total: chunks.length });
+      setStreamingOutput('');
+
+      // Build prompt for this chunk
+      const chunkPrompt = `Analyze the following section of the document (part ${i + 1} of ${chunks.length}):\n\n${chunk.text}\n\nProvide your analysis for this section only.`;
+
+      const messages = buildTaskMessages(activeTask!, {
+        text: chunkPrompt,
+        imageDataUrl,
+        audioData,
+        searchResults,
+        pageContent,
+      }, {
+        enableThinking: enableThinking || settings.thinkingModeDefault,
+      });
+
+      const taskId = crypto.randomUUID();
+      const timeoutId = setTimeout(() => {
+        setError('Model timeout on chunk ' + (i + 1) + '. Try reloading.');
+        setLifecycle('error');
+      }, 60000); // Longer timeout for chunks
+
+      const chunkResult = await new Promise<string>((resolve, reject) => {
+        const onChunkMessage = (event: MessageEvent) => {
+          const { status, output, numTokens, tps: newTps, taskId: msgTaskId } = event.data;
+          if (msgTaskId !== taskId) return;
+
+          if (status === 'task_update') {
+            setStreamingOutput(prev => prev + (output ?? ''));
+          }
+
+          if (status === 'task_complete') {
+            clearTimeout(timeoutId);
+            workerRef.current?.removeEventListener('message', onChunkMessage);
+            totalTokens += numTokens ?? 0;
+            totalTps += newTps ?? 0;
+            resolve(output ?? '');
+          }
+
+          if (status === 'task_error') {
+            clearTimeout(timeoutId);
+            workerRef.current?.removeEventListener('message', onChunkMessage);
+            reject(new Error(event.data.data ?? 'Chunk failed'));
+          }
+        };
+
+        workerRef.current?.addEventListener('message', onChunkMessage);
+        workerRef.current?.postMessage({
+          type: 'task',
+          data: {
+            taskId,
+            taskType: activeTask!,
+            messages,
+            enableThinking: enableThinking || settings.thinkingModeDefault,
+            maxNewTokens: getTokenBudget(activeTask!),
+            pass: 1,
+          },
+        });
+      });
+
+      allResults.push(chunkResult);
+    }
+
+    // Final synthesis pass: combine all chunk analyses
+    console.log('[TaskContext] All chunks processed, synthesizing final result');
+    setChunkProgress(null);
+    setStreamingOutput('');
+
+    const combinedText = allResults.map((r, i) => `=== Section ${i + 1} Analysis ===\n${r}`).join('\n\n');
+    const synthesisPrompt = `Based on the following section-by-section analyses of the document, provide a comprehensive final analysis that combines all findings:\n\n${combinedText}\n\nProvide the final unified analysis.`;
+
+    const synthesisMessages = buildTaskMessages(activeTask!, {
+      text: synthesisPrompt,
+    }, {
+      enableThinking: enableThinking || settings.thinkingModeDefault,
+    });
+
+    const synthesisTaskId = crypto.randomUUID();
+    const synthesisTimeoutId = setTimeout(() => {
+      setError('Model timeout during synthesis. Try reloading.');
+      setLifecycle('error');
+    }, 60000);
+
+    const onSynthesisMessage = (event: MessageEvent) => {
+      const { status, output, numTokens, tps: newTps, taskId: msgTaskId } = event.data;
+      if (msgTaskId !== synthesisTaskId) return;
+
+      if (status === 'task_update') {
+        setStreamingOutput(prev => prev + (output ?? ''));
+      }
+
+      if (status === 'task_complete') {
+        clearTimeout(synthesisTimeoutId);
+        workerRef.current?.removeEventListener('message', onSynthesisMessage);
+        
+        // Inline finalization logic
+        let finalOutput = output ?? '';
+        let parsed: unknown = undefined;
+        if (config.outputFormat === 'json') {
+          const result = parseJSON(finalOutput);
+          if (!('error' in result)) {
+            parsed = result;
+          }
+        } else {
+          finalOutput = extractText(finalOutput);
+        }
+        setFinalOutput(finalOutput);
+        setParsedOutput(parsed);
+        setTokenCount(totalTokens + (numTokens ?? 0));
+        setTps(totalTps > 0 ? totalTps / allResults.length : (newTps ?? 0));
+        setLifecycle('complete');
+      }
+
+      if (status === 'task_error') {
+        clearTimeout(synthesisTimeoutId);
+        workerRef.current?.removeEventListener('message', onSynthesisMessage);
+        setError(event.data.data ?? 'Synthesis failed');
+        setLifecycle('error');
+      }
+    };
+
+    workerRef.current?.addEventListener('message', onSynthesisMessage);
+    workerRef.current?.postMessage({
+      type: 'task',
+      data: {
+        taskId: synthesisTaskId,
+        taskType: activeTask!,
+        messages: synthesisMessages,
+        enableThinking: enableThinking || settings.thinkingModeDefault,
+        maxNewTokens: getTokenBudget(activeTask!),
+        pass: 1,
+      },
+    });
+  }, [activeTask, enableThinking, workerRef]);
 
   const submitTask = useCallback(async () => {
     console.log('[TaskContext] submitTask called', { activeTask, lifecycle, stage: state.stage });
@@ -146,17 +308,16 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       }
     }
 
-    // Limit PDF text to prevent GPU OOM (Gemma 4 E2B on WebGPU ~4096 token context)
-    const MAX_PDF_TOKENS = 3000;
-    let pdfTruncated = false;
-    if (pdfText) {
-      const estimatedTokens = Math.ceil(pdfText.length / 4);
-      if (estimatedTokens > MAX_PDF_TOKENS) {
-        console.warn('[TaskContext] PDF text too large:', estimatedTokens, 'tokens, truncating to', MAX_PDF_TOKENS);
-        const maxLength = MAX_PDF_TOKENS * 4;
-        pdfText = pdfText.slice(0, maxLength) + '\n\n[Document truncated - showing first ~' + MAX_PDF_TOKENS + ' tokens of ' + estimatedTokens + ' total]';
-        pdfTruncated = true;
-      }
+    // Smart chunking for large documents instead of truncation
+    const MAX_CHUNK_TOKENS = 2500;
+    const chunks = pdfText && needsChunking(pdfText, MAX_CHUNK_TOKENS)
+      ? chunkDocument(pdfText, MAX_CHUNK_TOKENS)
+      : null;
+
+    if (chunks && chunks.length > 1) {
+      console.log('[TaskContext] Document chunked into', chunks.length, 'parts');
+      totalChunksRef.current = chunks.length;
+      chunkResultsRef.current = [];
     }
 
     let imageDataUrl = taskInput.imageDataUrl;
@@ -198,6 +359,16 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     }
 
     console.log('[TaskContext] Building messages and sending to worker');
+
+    // Handle chunked document processing
+    if (chunks && chunks.length > 1) {
+      console.log('[TaskContext] Starting chunked processing:', chunks.length, 'chunks');
+      setChunkProgress({ current: 1, total: chunks.length });
+      await processChunks(chunks, config, settings, imageDataUrl, audioData, searchResults, pageContent);
+      return;
+    }
+
+    // Standard single-pass processing
     const messages = buildTaskMessages(activeTask, {
       text: taskInput.text,
       imageDataUrl,
@@ -389,6 +560,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       error,
       tokenCount,
       tps,
+      chunkProgress,
       selectTask,
       setInput,
       submitTask,
