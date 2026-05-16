@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 import MaterialIcon from '../ui/MaterialIcon';
+import Toast from '../ui/Toast';
 import { useTask } from '../../context/TaskContext';
 import { usePipeline } from '../../context/PipelineContext';
 import { TASK_CONFIGS } from '../../taskRouter';
@@ -37,6 +38,7 @@ export default function DashboardPage() {
   const { activeTask, selectTask } = useTask();
   const { activeTemplate, loadTemplate, resetPipeline } = usePipeline();
   const [showPipelineSelector, setShowPipelineSelector] = useState(false);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null);
 
   const handleSelectPipeline = (template: Parameters<typeof loadTemplate>[0]) => {
     loadTemplate(template);
@@ -45,6 +47,7 @@ export default function DashboardPage() {
 
   const handleCreateCustom = () => {
     setShowPipelineSelector(false);
+    setToast({ message: 'Custom pipeline builder coming soon', type: 'info' });
   };
 
   if (activeTemplate && !showPipelineSelector) {
@@ -208,6 +211,9 @@ export default function DashboardPage() {
           </section>
         );
       })}
+      <AnimatePresence>
+        {toast && <Toast message={toast.message} type={toast.type} onDismiss={() => setToast(null)} />}
+      </AnimatePresence>
     </motion.div>
   );
 }
