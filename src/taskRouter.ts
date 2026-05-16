@@ -63,7 +63,7 @@ export function buildTaskMessages(
 
   const contentParts: Array<{ type: string; [key: string]: unknown }> = [];
 
-  if (input.imageDataUrl) {
+  if (input.imageDataUrl && config.requiresImage) {
     contentParts.push({ type: 'image', image: input.imageDataUrl });
   }
   if (input.audioData) {
