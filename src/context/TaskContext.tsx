@@ -6,6 +6,7 @@ import { parseJSON, extractText } from '../outputParser';
 import { addEntry } from '../historyStore';
 import { validate, readAsDataURL, extractPDFText } from '../fileHandler';
 import { loadSettings } from '../settingsStore';
+import { search, fetchMultiple, McpAuthError, McpNetworkError } from '../mcpClient';
 
 export interface TaskInput {
   text?: string;
@@ -149,6 +150,30 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
 
     let audioData = taskInput.audioData;
 
+    // Research task: fetch live web results before building messages
+    let searchResults = '';
+    let pageContent = '';
+    if (activeTask === 'research') {
+      try {
+        const results = await search(taskInput.text ?? '');
+        searchResults = results.map((r, i) => `[${i + 1}] ${r.title}\nURL: ${r.url}\nSnippet: ${r.snippet}`).join('\n\n');
+        const urls = results.slice(0, 3).map(r => r.url);
+        if (urls.length > 0) {
+          const contents = await fetchMultiple(urls);
+          pageContent = contents.filter(c => c).join('\n\n---\n\n');
+        }
+      } catch (err) {
+        if (err instanceof McpAuthError) {
+          setError('Web search API key is invalid. Please reconnect in Settings.');
+          setLifecycle('error');
+          return;
+        }
+        // Network error — continue with empty search results (model knowledge fallback)
+        searchResults = '(Search unavailable — using model knowledge)';
+        pageContent = '';
+      }
+    }
+
     const messages = buildTaskMessages(activeTask, {
       text: taskInput.text,
       imageDataUrl,
@@ -157,6 +182,8 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       question: taskInput.question,
       tone: taskInput.tone,
       language: taskInput.language,
+      searchResults,
+      pageContent,
     }, {
       enableThinking: enableThinking || settings.thinkingModeDefault,
       passOneOutput: passOneOutput.current ?? undefined,

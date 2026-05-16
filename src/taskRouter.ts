@@ -46,10 +46,24 @@ export function getTokenBudget(taskType: TaskType): number {
 
 export function buildTaskMessages(
   taskType: TaskType,
-  input: { text?: string; imageDataUrl?: string; audioData?: Float32Array; pdfText?: string; question?: string; tone?: string; language?: string },
+  input: { text?: string; imageDataUrl?: string; audioData?: Float32Array; pdfText?: string; question?: string; tone?: string; language?: string; searchResults?: string; pageContent?: string },
   options?: { enableThinking?: boolean; passOneOutput?: string }
 ): Array<{ role: string; content: string | Array<{ type: string; [key: string]: unknown }> }> {
   const config = TASK_CONFIGS[taskType];
+
+  if (taskType === 'research' && input.searchResults !== undefined) {
+    const systemPrompt = getPrompt(taskType, { language: input.language, tone: input.tone, question: input.question })
+      .replace('{searchResults}', input.searchResults || 'No search results available.')
+      .replace('{pageContent}', input.pageContent || 'No page content available.');
+
+    const messages: Array<{ role: string; content: string | Array<{ type: string; [key: string]: unknown }> }> = [];
+    if (systemPrompt) {
+      messages.push({ role: 'system', content: systemPrompt });
+    }
+    messages.push({ role: 'user', content: input.text ?? '' });
+    return messages;
+  }
+
   const systemPrompt = getPrompt(taskType, { language: input.language, tone: input.tone, question: input.question });
 
   if (config.twoPassPipeline && options?.passOneOutput) {
