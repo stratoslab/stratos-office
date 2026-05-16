@@ -39,3 +39,6 @@ coverage/
 .cache/
 .turbo/
 .vercel/
+
+# Design exports
+stitch_stratos_office_ai_ui/
