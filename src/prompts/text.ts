@@ -35,4 +35,4 @@ export const code_review = `Review the provided code and provide feedback. Retur
 
 Return only valid JSON.`;
 
-export const general_text = ``;
+export const general_text = `You are a helpful assistant. Respond to the user's message concisely and accurately.`;

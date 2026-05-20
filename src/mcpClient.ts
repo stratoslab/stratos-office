@@ -155,7 +155,7 @@ export async function fetchContent(url: string): Promise<string> {
     }
 
     if (!response.ok) {
-      return '';
+      throw new McpNetworkError(`Fetch failed: ${response.status} ${response.statusText}`);
     }
 
     const data = await response.json();
@@ -164,8 +164,13 @@ export async function fetchContent(url: string): Promise<string> {
 
     fetchCache.set(url, { content, timestamp: Date.now() });
     return content;
-  } catch {
-    return '';
+  } catch (err) {
+    if (err instanceof McpAuthError) throw err;
+    if (err instanceof McpNetworkError) throw err;
+    if (err instanceof DOMException && err.name === 'AbortError') {
+      throw new McpNetworkError('Fetch timed out after 15 seconds');
+    }
+    throw new McpNetworkError(err instanceof Error ? err.message : 'Fetch failed');
   } finally {
     clearTimeout(timeoutId);
   }

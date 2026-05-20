@@ -32,10 +32,15 @@ function relativeTime(timestamp: string): string {
 
 export default function HistoryDrawer({ isOpen, onClose }: HistoryDrawerProps) {
   const [entries, setEntries] = useState<TaskEntry[]>([]);
+  const [loading, setLoading] = useState(false);
   const { selectTask } = useTask();
 
   const loadEntries = useCallback(() => {
-    getAllEntries().then(setEntries);
+    setLoading(true);
+    getAllEntries().then((result) => {
+      setEntries(result);
+      setLoading(false);
+    });
   }, []);
 
   useEffect(() => {
@@ -87,10 +92,18 @@ export default function HistoryDrawer({ isOpen, onClose }: HistoryDrawerProps) {
             </div>
 
             <div className="flex-1 overflow-y-auto px-4 space-y-2 py-4">
-              {entries.length === 0 && (
+              {loading && (
+                <div className="flex items-center justify-center py-8">
+                  <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24" fill="none">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" style={{ color: 'rgba(0,212,255,0.2)' }} />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" style={{ color: 'var(--primary-fixed-dim)' }} />
+                  </svg>
+                </div>
+              )}
+              {!loading && entries.length === 0 && (
                 <p className="text-center text-gray-500 text-sm py-8">No task history yet.</p>
               )}
-              {entries.map(entry => {
+              {!loading && entries.map(entry => {
                 const config = getTaskConfig(entry.type);
                 const colors = categoryColors[entry.category] ?? categoryColors.documents;
                 return (

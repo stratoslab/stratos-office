@@ -92,13 +92,6 @@ export function readAsDataURL(file: File): Promise<string> {
   });
 }
 
-export async function generatePreview(file: File): Promise<string | null> {
-  if (IMAGE_MIMES.has(file.type)) {
-    return readAsDataURL(file);
-  }
-  return null;
-}
-
 /**
  * Extract audio from a video or audio file as a 16kHz mono Float32Array.
  * Uses the browser's AudioContext to decode any format the browser supports
@@ -124,6 +117,15 @@ export async function extractAudio(file: File): Promise<Float32Array> {
       }
     }
     return pcm;
+  } catch (err) {
+    const message = err instanceof Error ? err.message : '';
+    if (message.includes('decodeAudioData') || message.includes('Unable to decode')) {
+      throw new Error(`Unsupported audio codec in "${file.name}". The browser cannot decode this format. Try converting to WAV or MP3 first.`);
+    }
+    if (message.includes('empty')) {
+      throw new Error(`No audio data found in "${file.name}". The file may be corrupted or contain only a video track without audio.`);
+    }
+    throw new Error(`Failed to extract audio from "${file.name}": ${message || 'Unknown decoding error'}`);
   } finally {
     await audioCtx.close();
   }
@@ -139,8 +141,8 @@ export async function extractPDFText(
 ): Promise<{ text: string; pageCount: number }> {
   const pdfjsLib = await import('pdfjs-dist/legacy/build/pdf.mjs');
 
-  // Use locally bundled worker to avoid COEP/CORS issues with CDN
-  pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
+  const workerUrl = new URL('/pdf.worker.min.mjs', import.meta.url).href;
+  pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl;
 
   const arrayBuffer = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;

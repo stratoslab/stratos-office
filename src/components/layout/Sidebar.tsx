@@ -4,6 +4,7 @@ import { TaskType, TaskCategory } from '../../types';
 import { useTask } from '../../context/TaskContext';
 import { usePipeline } from '../../context/PipelineContext';
 import { TASK_CONFIGS } from '../../taskRouter';
+import { getAllPipelineTemplates } from '../../pipelineTemplates';
 import { useModel } from '../../context/ModelContext';
 import { loadSettings } from '../../settingsStore';
 import MaterialIcon from '../ui/MaterialIcon';
@@ -106,7 +107,7 @@ export default function Sidebar({ onOpenHistory, onOpenSettings, mobileOpen, onM
         >
           <MaterialIcon name="account_tree" size={20} />
           <span className="text-sm font-medium flex-1 text-left">Pipelines</span>
-          <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(0,229,204,0.1)', color: 'var(--secondary)' }}>8</span>
+          <span className="text-[10px] px-1.5 py-0.5 rounded-full" style={{ background: 'rgba(0,229,204,0.1)', color: 'var(--secondary)' }}>{getAllPipelineTemplates().length}</span>
         </button>
 
         {visibleCategories.map(cat => {

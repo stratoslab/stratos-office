@@ -13,10 +13,16 @@ interface PipelineWorkspaceProps {
 export default function PipelineWorkspace({ template }: PipelineWorkspaceProps) {
   const { run, streamingOutput, loadTemplate, setPipelineInput, runPipeline, cancelPipeline, retryStep, skipStep, resetPipeline } = usePipeline();
   const [inputText, setInputText] = useState('');
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
-  const handleFile = useCallback(async (file: File, dataUrl: string) => {
+  const handleFile = useCallback((file: File, dataUrl: string) => {
+    setUploadError(null);
     setPipelineInput({ files: [file], imageDataUrl: dataUrl });
   }, [setPipelineInput]);
+
+  const handleUploadError = useCallback((error: string) => {
+    setUploadError(error);
+  }, []);
 
   const isRunning = run?.status === 'running' || run?.status === 'submitting';
   const isComplete = run?.status === 'complete';
@@ -37,16 +43,22 @@ export default function PipelineWorkspace({ template }: PipelineWorkspaceProps) 
           <div className="bg-[#0A2540]/50 rounded-xl p-4 md:p-6 space-y-3 md:space-y-4">
             <h3 className="text-xs md:text-sm font-medium text-gray-400">Input</h3>
 
+            {uploadError && (
+              <div className="bg-red-900/20 border border-red-500/30 rounded-lg px-3 py-2 text-red-400 text-sm" role="alert">
+                {uploadError}
+              </div>
+            )}
+
             {template.expectedInputs?.some(i => i.type === 'image') && (
-              <FileUploadZone taskType="ocr" onFile={handleFile} onError={() => {}} />
+              <FileUploadZone taskType="ocr" onFile={handleFile} onError={handleUploadError} />
             )}
 
             {template.expectedInputs?.some(i => i.type === 'audio') && (
-              <FileUploadZone taskType="transcription" onFile={handleFile} onError={() => {}} />
+              <FileUploadZone taskType="transcription" onFile={handleFile} onError={handleUploadError} />
             )}
 
             {template.expectedInputs?.some(i => i.type === 'pdf') && (
-              <FileUploadZone taskType="pdf_qa" onFile={handleFile} onError={() => {}} />
+              <FileUploadZone taskType="pdf_qa" onFile={handleFile} onError={handleUploadError} />
             )}
 
             {template.expectedInputs?.some(i => i.type === 'text') && (

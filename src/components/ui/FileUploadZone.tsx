@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { TaskType } from '../../types';
-import { validate, readAsDataURL, generatePreview } from '../../fileHandler';
+import { validate, readAsDataURL } from '../../fileHandler';
 
 interface FileUploadZoneProps {
   taskType: TaskType;

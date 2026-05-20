@@ -95,7 +95,7 @@ export default function InputPanel({ taskType }: InputPanelProps) {
     }
   }, [config.requiresPDF, config.requiresAudio, config.requiresText, setInput]);
 
-  const handleFile2 = useCallback(async (file: File, dataUrl: string) => {
+  const handleFile2 = useCallback(async (file: File, _dataUrl: string) => {
     setInput({ secondFile: file });
     setError(null);
 

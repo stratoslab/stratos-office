@@ -12,7 +12,7 @@ interface SettingsDrawerProps {
 }
 
 export default function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps) {
-  const { state } = useModel();
+  const { state, reloadModel } = useModel();
   const [settings, setSettings] = useState<AppSettings>(loadSettings());
   const [tinyfishConnected, setTinyfishConnected] = useState(isTinyfishConnected());
   const [tinyfishKeyMasked, setTinyfishKeyMasked] = useState<string | null>(getTinyfishKeyMasked());
@@ -46,11 +46,16 @@ export default function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps)
     });
   }, []);
 
-  const handleClearCache = useCallback(() => {
+  const handleClearCache = useCallback(async () => {
     if (confirm('Clear the model cache? This will require re-downloading the model.')) {
-      caches.keys().then(names => names.forEach(name => caches.delete(name)));
+      await caches.keys().then(names => Promise.all(names.map(name => caches.delete(name))));
+      reloadModel();
     }
-  }, []);
+  }, [reloadModel]);
+
+  const handleReloadModel = useCallback(() => {
+    reloadModel();
+  }, [reloadModel]);
 
   return (
     <AnimatePresence>
@@ -155,6 +160,11 @@ export default function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps)
                   <button onClick={() => toggleSetting('offlineMode')} className="w-12 h-6 rounded-full relative cursor-pointer transition-colors flex-shrink-0 min-w-[48px]" style={{ background: settings.offlineMode ? 'var(--primary-container)' : 'var(--surface-variant)' }}>
                     <div className="absolute top-1 w-4 h-4 bg-white rounded-full transition-all" style={{ left: settings.offlineMode ? '24px' : '4px' }} />
                   </button>
+                </div>
+                <div className="rounded-lg p-3 border" style={{ background: 'rgba(255, 212, 130, 0.05)', borderColor: 'rgba(255, 212, 130, 0.15)' }}>
+                  <p className="text-[10px] font-medium" style={{ color: 'var(--warning)' }}>
+                    API keys are stored in your browser's localStorage. Anyone with access to this device can view them.
+                  </p>
                 </div>
               </section>
 
@@ -295,6 +305,10 @@ export default function SettingsDrawer({ isOpen, onClose }: SettingsDrawerProps)
                   <MaterialIcon name="build" size={20} style={{ color: 'var(--secondary)' }} />
                   <h3 className="text-[10px] font-bold uppercase tracking-[0.2em]" style={{ color: 'var(--outline)' }}>Maintenance</h3>
                 </div>
+                <button onClick={handleReloadModel} className="w-full py-2.5 flex items-center justify-between px-3 -mx-3 rounded-lg transition-colors group" style={{ color: 'var(--primary-fixed-dim)' }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(0, 212, 255, 0.1)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
+                  <span className="text-sm font-medium">Reload Model</span>
+                  <MaterialIcon name="refresh" size={18} className="group-hover:scale-110 transition-transform" />
+                </button>
                 <button onClick={handleClearCache} className="w-full py-2.5 flex items-center justify-between px-3 -mx-3 rounded-lg transition-colors group" style={{ color: 'var(--error)' }} onMouseEnter={e => (e.currentTarget.style.background = 'rgba(147, 0, 10, 0.1)')} onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
                   <span className="text-sm font-medium">Clear Model Cache</span>
                   <MaterialIcon name="delete_forever" size={18} className="group-hover:scale-110 transition-transform" />

@@ -64,11 +64,14 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
   const [tokenCount, setTokenCount] = useState<number | null>(null);
   const [tps, setTps] = useState<number | null>(null);
   const passOneOutput = useRef<string | null>(null);
+  const pass2TimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const activeTaskIdRef = useRef<string | null>(null);
   
   // Chunk processing state for large documents
   const [chunkProgress, setChunkProgress] = useState<{ current: number; total: number } | null>(null);
   const chunkResultsRef = useRef<string[]>([]);
   const totalChunksRef = useRef<number>(0);
+  const taskStartTimeRef = useRef<number>(0);
 
   const selectTask = useCallback((taskType: TaskType | null) => {
     setActiveTask(taskType);
@@ -95,6 +98,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     if (workerRef.current) {
       workerRef.current.postMessage({ type: 'cancel_task' });
     }
+    if (pass2TimeoutRef.current) clearTimeout(pass2TimeoutRef.current);
     setLifecycle('complete');
   }, [workerRef]);
 
@@ -109,6 +113,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     chunkResultsRef.current = [];
     totalChunksRef.current = 0;
     setChunkProgress(null);
+    if (pass2TimeoutRef.current) clearTimeout(pass2TimeoutRef.current);
   }, []);
 
   // Process document in chunks for large files
@@ -222,23 +227,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       if (status === 'task_complete') {
         clearTimeout(synthesisTimeoutId);
         workerRef.current?.removeEventListener('message', onSynthesisMessage);
-        
-        // Inline finalization logic
-        let finalOutput = output ?? '';
-        let parsed: unknown = undefined;
-        if (config.outputFormat === 'json') {
-          const result = parseJSON(finalOutput);
-          if (!('error' in result)) {
-            parsed = result;
-          }
-        } else {
-          finalOutput = extractText(finalOutput);
-        }
-        setFinalOutput(finalOutput);
-        setParsedOutput(parsed);
-        setTokenCount(totalTokens + (numTokens ?? 0));
-        setTps(totalTps > 0 ? totalTps / allResults.length : (newTps ?? 0));
-        setLifecycle('complete');
+        finalizeOutput(output ?? '', activeTask!, config, totalTokens + (numTokens ?? 0), totalTps > 0 ? totalTps / allResults.length : (newTps ?? 0));
       }
 
       if (status === 'task_error') {
@@ -283,6 +272,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     }
 
     console.log('[TaskContext] Setting lifecycle to submitting');
+    taskStartTimeRef.current = Date.now();
     setLifecycle('submitting');
     setStreamingOutput('');
     setFinalOutput('');
@@ -461,6 +451,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
 
     const taskId = crypto.randomUUID();
     const isPass2 = passOneOutput.current !== null;
+    activeTaskIdRef.current = taskId;
 
     // Timeout: if worker doesn't respond within 30s, show error
     const timeoutId = setTimeout(() => {
@@ -518,8 +509,30 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
 
         const pass2TaskId = crypto.randomUUID();
 
+        const onPass2Message = (e: MessageEvent) => {
+          const { status: s2, output: o2, numTokens: n2, tps: t2, taskId: t2id } = e.data;
+          if (t2id !== pass2TaskId) return;
+
+          if (s2 === 'task_update') {
+            setStreamingOutput(prev => prev + (o2 ?? ''));
+          }
+
+          if (s2 === 'task_complete') {
+            if (pass2TimeoutRef.current) clearTimeout(pass2TimeoutRef.current);
+            workerRef.current?.removeEventListener('message', onPass2Message);
+            finalizeOutput(o2 ?? streamingOutput, activeTask, config, n2 ?? 0, t2 ?? 0);
+          }
+
+          if (s2 === 'task_error') {
+            if (pass2TimeoutRef.current) clearTimeout(pass2TimeoutRef.current);
+            workerRef.current?.removeEventListener('message', onPass2Message);
+            setError(e.data.data ?? 'Task failed');
+            setLifecycle('error');
+          }
+        };
+
         // New timeout for pass2
-        const pass2TimeoutId = setTimeout(() => {
+        pass2TimeoutRef.current = setTimeout(() => {
           setError('Model is not responding during pass 2. Try reloading the page.');
           setLifecycle('error');
           workerRef.current?.removeEventListener('message', onPass2Message);
@@ -536,28 +549,6 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
             pass: 2,
           },
         });
-
-        const onPass2Message = (e: MessageEvent) => {
-          const { status: s2, output: o2, numTokens: n2, tps: t2, taskId: t2id } = e.data;
-          if (t2id !== pass2TaskId) return;
-
-          if (s2 === 'task_update') {
-            setStreamingOutput(prev => prev + (o2 ?? ''));
-          }
-
-          if (s2 === 'task_complete') {
-            clearTimeout(pass2TimeoutId);
-            workerRef.current?.removeEventListener('message', onPass2Message);
-            finalizeOutput(o2 ?? streamingOutput, activeTask, config, n2 ?? 0, t2 ?? 0);
-          }
-
-          if (s2 === 'task_error') {
-            clearTimeout(pass2TimeoutId);
-            workerRef.current?.removeEventListener('message', onPass2Message);
-            setError(e.data.data ?? 'Task failed');
-            setLifecycle('error');
-          }
-        };
 
         workerRef.current?.addEventListener('message', onPass2Message);
         return;
@@ -604,6 +595,8 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
     setTps(taskTps);
     setLifecycle('complete');
 
+    const durationMs = taskStartTimeRef.current > 0 ? Date.now() - taskStartTimeRef.current : 0;
+
     const entry: TaskEntry = {
       id: crypto.randomUUID(),
       type: taskType,
@@ -613,7 +606,7 @@ export function TaskProvider({ children }: { children: React.ReactNode }) {
       parsedOutput: parsed,
       status: 'complete',
       timestamp: new Date().toISOString(),
-      durationMs: 0,
+      durationMs,
       tokenCount: numTokens,
       tps: taskTps,
     };

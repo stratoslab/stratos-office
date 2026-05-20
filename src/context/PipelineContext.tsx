@@ -47,6 +47,7 @@ export function PipelineProvider({ children }: { children: React.ReactNode }) {
   const [tps, setTps] = useState<number | null>(null);
   const cancelledRef = useRef(false);
   const stepOutputsRef = useRef<Array<{ text: string; parsed?: unknown }>>([]);
+  const stepStartTimesRef = useRef<Map<number, number>>(new Map());
 
   const loadTemplate = useCallback((template: PipelineTemplate) => {
     setActiveTemplate(template);
@@ -80,18 +81,21 @@ export function PipelineProvider({ children }: { children: React.ReactNode }) {
   }, [workerRef]);
 
   const buildStepInput = useCallback(
-    (stepIndex: number): Parameters<typeof buildTaskMessages>[1] => {
+    (stepIndex: number, overrides?: { imageDataUrl?: string; audioData?: Float32Array; pdfText?: string }): Parameters<typeof buildTaskMessages>[1] => {
       if (!activeTemplate) return {};
 
       const step = activeTemplate.steps[stepIndex];
       const prevOutput = stepOutputsRef.current[stepIndex - 1] ?? null;
+      const imageDataUrl = overrides?.imageDataUrl ?? pipelineInput.imageDataUrl;
+      const audioData = overrides?.audioData ?? pipelineInput.audioData;
+      const pdfText = overrides?.pdfText ?? pipelineInput.pdfText;
 
       if (!prevOutput || stepIndex === 0) {
         return {
           text: pipelineInput.text,
-          imageDataUrl: pipelineInput.imageDataUrl,
-          audioData: pipelineInput.audioData,
-          pdfText: pipelineInput.pdfText,
+          imageDataUrl,
+          audioData,
+          pdfText,
         };
       }
 
@@ -110,28 +114,22 @@ export function PipelineProvider({ children }: { children: React.ReactNode }) {
           baseInput.text = prevOutput.text;
           break;
         case 'file':
-          baseInput.imageDataUrl = pipelineInput.imageDataUrl;
+          baseInput.imageDataUrl = imageDataUrl;
           break;
         case 'combined': {
           const fields = step.inputMapping.fields ?? ['text'];
           for (const field of fields) {
             if (field === 'text') baseInput.text = prevOutput.text;
             else if (field === 'pdfText') baseInput.pdfText = prevOutput.text;
-            else if (field === 'imageDataUrl') baseInput.imageDataUrl = pipelineInput.imageDataUrl;
+            else if (field === 'imageDataUrl') baseInput.imageDataUrl = imageDataUrl;
           }
           break;
         }
       }
 
-      if (pipelineInput.imageDataUrl && !baseInput.imageDataUrl) {
-        baseInput.imageDataUrl = pipelineInput.imageDataUrl;
-      }
-      if (pipelineInput.audioData) {
-        baseInput.audioData = pipelineInput.audioData;
-      }
-      if (pipelineInput.pdfText) {
-        baseInput.pdfText = pipelineInput.pdfText;
-      }
+      if (imageDataUrl && !baseInput.imageDataUrl) baseInput.imageDataUrl = imageDataUrl;
+      if (audioData) baseInput.audioData = audioData;
+      if (pdfText) baseInput.pdfText = pdfText;
 
       return baseInput;
     },
@@ -216,6 +214,9 @@ export function PipelineProvider({ children }: { children: React.ReactNode }) {
       const step = activeTemplate.steps[stepIndex];
       stepOutputsRef.current[stepIndex] = { text: output, parsed };
 
+      const startTime = stepStartTimesRef.current.get(stepIndex) ?? Date.now();
+      const durationMs = Date.now() - startTime;
+
       setRun(prev => {
         if (!prev) return null;
         const updatedSteps = [...prev.steps];
@@ -226,7 +227,7 @@ export function PipelineProvider({ children }: { children: React.ReactNode }) {
           parsedOutput: parsed,
           tokenCount,
           tps: taskTps,
-          durationMs: Date.now() - (updatedSteps[stepIndex].durationMs ? 0 : Date.now()),
+          durationMs,
         };
         return {
           ...prev,
@@ -286,6 +287,7 @@ export function PipelineProvider({ children }: { children: React.ReactNode }) {
         return { ...prev, currentStepIndex: i, steps: updatedSteps };
       });
 
+      stepStartTimesRef.current.set(i, Date.now());
       setStreamingOutput('');
 
       try {
@@ -373,7 +375,7 @@ export function PipelineProvider({ children }: { children: React.ReactNode }) {
             setTps(result.tps);
           }
         } else {
-          const stepInput = buildStepInputForPipeline(i, { imageDataUrl, audioData, pdfText });
+          const stepInput = buildStepInput(i, { imageDataUrl, audioData, pdfText });
           const messages = buildTaskMessages(step.taskType, stepInput, {
             pipelineContext: {
               previousOutputs: stepOutputsRef.current.slice(0, i),
@@ -438,7 +440,7 @@ export function PipelineProvider({ children }: { children: React.ReactNode }) {
     (
       taskId: string,
       messages: Array<{ role: string; content: unknown }>,
-      config: { outputFormat: string },
+      config: { outputFormat: string; enableThinkingByDefault: boolean },
       taskType: TaskType
     ): Promise<{ output: string; parsed?: unknown; tokenCount: number; tps: number }> => {
       return new Promise((resolve, reject) => {
@@ -446,6 +448,11 @@ export function PipelineProvider({ children }: { children: React.ReactNode }) {
           reject(new Error('Worker not available'));
           return;
         }
+
+        const timeoutId = setTimeout(() => {
+          workerRef.current?.removeEventListener('message', onMessage);
+          reject(new Error(`Pipeline step timed out after 60s (${taskType})`));
+        }, 60000);
 
         const onMessage = (event: MessageEvent) => {
           const { status, output, numTokens, tps: newTps, taskId: msgTaskId } = event.data;
@@ -456,6 +463,7 @@ export function PipelineProvider({ children }: { children: React.ReactNode }) {
           }
 
           if (status === 'task_complete') {
+            clearTimeout(timeoutId);
             workerRef.current?.removeEventListener('message', onMessage);
             const rawOutput = output ?? '';
             let parsed: unknown = undefined;
@@ -474,6 +482,7 @@ export function PipelineProvider({ children }: { children: React.ReactNode }) {
           }
 
           if (status === 'task_error') {
+            clearTimeout(timeoutId);
             workerRef.current?.removeEventListener('message', onMessage);
             reject(new Error(event.data.data ?? 'Task failed'));
           }
@@ -487,7 +496,7 @@ export function PipelineProvider({ children }: { children: React.ReactNode }) {
             taskId,
             taskType,
             messages,
-            enableThinking: config.outputFormat === 'json',
+            enableThinking: config.enableThinkingByDefault,
             maxNewTokens: getTokenBudget(taskType),
             pass: 1,
           },
@@ -495,59 +504,6 @@ export function PipelineProvider({ children }: { children: React.ReactNode }) {
       });
     },
     [workerRef]
-  );
-
-  const buildStepInputForPipeline = useCallback(
-    (stepIndex: number, overrides: { imageDataUrl?: string; audioData?: Float32Array; pdfText?: string }): Parameters<typeof buildTaskMessages>[1] => {
-      if (!activeTemplate) return {};
-
-      const step = activeTemplate.steps[stepIndex];
-      const prevOutput = stepOutputsRef.current[stepIndex - 1] ?? null;
-
-      if (!prevOutput || stepIndex === 0) {
-        return {
-          text: pipelineInput.text,
-          imageDataUrl: overrides.imageDataUrl ?? pipelineInput.imageDataUrl,
-          audioData: overrides.audioData ?? pipelineInput.audioData,
-          pdfText: overrides.pdfText ?? pipelineInput.pdfText,
-        };
-      }
-
-      const baseInput: Parameters<typeof buildTaskMessages>[1] = {};
-
-      switch (step.inputMapping.type) {
-        case 'text': {
-          const field = step.inputMapping.field ?? 'text';
-          (baseInput as Record<string, unknown>)[field] = prevOutput.text;
-          break;
-        }
-        case 'parsed_json':
-          baseInput.text = prevOutput.parsed ? JSON.stringify(prevOutput.parsed, null, 2) : prevOutput.text;
-          break;
-        case 'raw_output':
-          baseInput.text = prevOutput.text;
-          break;
-        case 'file':
-          baseInput.imageDataUrl = overrides.imageDataUrl ?? pipelineInput.imageDataUrl;
-          break;
-        case 'combined': {
-          const fields = step.inputMapping.fields ?? ['text'];
-          for (const field of fields) {
-            if (field === 'text') baseInput.text = prevOutput.text;
-            else if (field === 'pdfText') baseInput.pdfText = prevOutput.text;
-            else if (field === 'imageDataUrl') baseInput.imageDataUrl = overrides.imageDataUrl ?? pipelineInput.imageDataUrl;
-          }
-          break;
-        }
-      }
-
-      if (overrides.imageDataUrl && !baseInput.imageDataUrl) baseInput.imageDataUrl = overrides.imageDataUrl;
-      if (overrides.audioData) baseInput.audioData = overrides.audioData;
-      if (overrides.pdfText) baseInput.pdfText = overrides.pdfText;
-
-      return baseInput;
-    },
-    [activeTemplate, pipelineInput]
   );
 
   const retryStep = useCallback(async (stepIndex: number) => {
@@ -568,7 +524,7 @@ export function PipelineProvider({ children }: { children: React.ReactNode }) {
 
     const step = activeTemplate.steps[stepIndex];
     const config = getTaskConfig(step.taskType);
-    const stepInput = buildStepInputForPipeline(stepIndex, {});
+    const stepInput = buildStepInput(stepIndex);
     const messages = buildTaskMessages(step.taskType, stepInput, {
       pipelineContext: {
         previousOutputs: stepOutputsRef.current.slice(0, stepIndex),
@@ -603,7 +559,7 @@ export function PipelineProvider({ children }: { children: React.ReactNode }) {
         return { ...prev, steps: updatedSteps, status: 'error' };
       });
     }
-  }, [run, activeTemplate, buildStepInputForPipeline, executeStepDirect, finalizeStepOutput]);
+  }, [run, activeTemplate, buildStepInput, executeStepDirect, finalizeStepOutput]);
 
   const skipStep = useCallback((stepIndex: number) => {
     if (!run) return;

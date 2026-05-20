@@ -4,6 +4,8 @@
  * preserving paragraph/section boundaries to maintain semantic coherence.
  */
 
+import { estimateTokens as _estimateTokens } from './fileHandler';
+
 export interface DocumentChunk {
   index: number;
   total: number;
@@ -102,14 +104,13 @@ export function chunkDocument(
 
 /**
  * Estimate tokens for text (rough: 1 token ≈ 4 chars)
+ * Re-exported from fileHandler for convenience.
  */
-export function estimateTokens(text: string): number {
-  return Math.ceil(text.length / 4);
-}
+export const estimateTokens = _estimateTokens;
 
 /**
  * Check if document needs chunking
  */
 export function needsChunking(text: string, maxTokens: number = 3000): boolean {
-  return estimateTokens(text) > maxTokens;
+  return _estimateTokens(text) > maxTokens;
 }

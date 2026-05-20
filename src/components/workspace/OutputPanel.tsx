@@ -29,8 +29,8 @@ export default function OutputPanel({ taskType }: OutputPanelProps) {
   };
 
   const renderOutput = () => {
-    if (taskType === 'object_detection' && parsedOutput) {
-      return <BoundingBoxCanvas imageDataUrl={taskInput.imageDataUrl ?? ''} detections={parsedOutput as any[]} />;
+    if (taskType === 'object_detection') {
+      return <MarkdownRenderer content={output} />;
     }
 
     if (taskType === 'redline_comparison' && parsedOutput) {
@@ -43,10 +43,6 @@ export default function OutputPanel({ taskType }: OutputPanelProps) {
 
     if (config.outputFormat === 'html') {
       return <HtmlPreviewFrame html={output} />;
-    }
-
-    if (config.outputFormat === 'table' || config.outputFormat === 'markdown') {
-      return <MarkdownRenderer content={output} />;
     }
 
     return <MarkdownRenderer content={output} />;

@@ -5,9 +5,8 @@ import { TASK_CONFIGS } from '../taskRouter';
 describe('promptTemplates', () => {
   const taskTypes = Object.keys(TASK_CONFIGS) as Parameters<typeof getPrompt>[0][];
 
-  it('returns non-empty string for all defined task types except general_text', () => {
+  it('returns non-empty string for all defined task types', () => {
     for (const taskType of taskTypes) {
-      if (taskType === 'general_text') continue;
       const prompt = getPrompt(taskType);
       expect(prompt.length).toBeGreaterThan(0);
     }
@@ -25,10 +24,5 @@ describe('promptTemplates', () => {
   it('interpolates tone into tone_rewriter prompt', () => {
     const prompt = getPrompt('tone_rewriter', { tone: 'professional' });
     expect(prompt).toContain('professional');
-  });
-
-  it('general_text returns empty string', () => {
-    const prompt = getPrompt('general_text');
-    expect(prompt).toBe('');
   });
 });

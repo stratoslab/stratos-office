@@ -230,7 +230,7 @@ export default function LoadingPage() {
             </span>
           </div>
           <p className="text-[10px]" style={{ color: "var(--outline)" }}>
-            © 2024 Stratos Office. Private &amp; Secure AI.
+            &copy; 2026 Stratos Office. Private &amp; Secure AI.
           </p>
         </div>
       </div>

@@ -72,10 +72,13 @@ describe('Bug 1 — React effect ordering race condition (exploration)', () => {
     postMessageMock.mockClear();
     // Replace the global Worker with our mock
     vi.stubGlobal('Worker', MockWorker);
+    // Bypass DemoGate in tests by pre-setting session storage
+    sessionStorage.setItem('stratos-demo-access', '1');
   });
 
   afterEach(() => {
     vi.unstubAllGlobals();
+    sessionStorage.removeItem('stratos-demo-access');
   });
 
   it(

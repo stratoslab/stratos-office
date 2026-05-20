@@ -77,6 +77,24 @@ class ModelSession {
     await this.loadingPromise;
   }
 
+  async unload() {
+    if (this.loadingPromise) {
+      await this.loadingPromise.catch(() => {});
+    }
+    try {
+      this.model?.dispose?.();
+    } catch {}
+    this.processor = null;
+    this.model = null;
+    this.stoppingCriteria = null;
+    this.loadingPromise = null;
+  }
+
+  async reload() {
+    await this.unload();
+    await this.load();
+  }
+
   async _load() {
     await loadTransformers();
 
@@ -374,6 +392,12 @@ self.addEventListener("message", async (event) => {
         break;
       case "reset":
         session.reset();
+        break;
+      case "unload":
+        await session.unload();
+        break;
+      case "reload":
+        await session.reload();
         break;
       default:
         break;

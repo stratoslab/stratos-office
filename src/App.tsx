@@ -10,6 +10,8 @@ import Sidebar from "./components/layout/Sidebar";
 import TopBar from "./components/layout/TopBar";
 import HistoryDrawer from "./components/drawers/HistoryDrawer";
 import SettingsDrawer from "./components/drawers/SettingsDrawer";
+import ErrorBoundary from "./components/ui/ErrorBoundary";
+import DemoGate from "./components/DemoGate";
 import MaterialIcon from "./components/ui/MaterialIcon";
 
 function AppContent() {
@@ -74,7 +76,7 @@ function AppContent() {
           <div className="flex items-center gap-3">
             <img src="/stratos-logo-white.png" alt="Stratos Office" className="h-4 md:h-5 w-auto opacity-80" />
             <span className="text-[10px] md:text-xs" style={{ color: "rgba(133, 147, 152, 0.6)" }}>
-              © 2024 Stratos Office. Private &amp; Secure AI.
+              &copy; 2026 Stratos Office. Private &amp; Secure AI.
             </span>
           </div>
           <div className="flex items-center gap-4 md:gap-6">
@@ -121,11 +123,6 @@ function AppContent() {
             </div>
           </div>
           <div className="flex items-center gap-4 md:gap-8 min-w-0">
-            <div className="hidden sm:flex items-center gap-6">
-              <a className="text-[10px] font-bold hover:underline uppercase tracking-widest" style={{ color: "var(--outline)" }} href="#">Privacy</a>
-              <a className="text-[10px] font-bold hover:underline uppercase tracking-widest" style={{ color: "var(--outline)" }} href="#">Terms</a>
-              <a className="text-[10px] font-bold hover:underline uppercase tracking-widest" style={{ color: "var(--outline)" }} href="#">API Status</a>
-            </div>
             <div
               className="flex items-center gap-2 border-l pl-4 md:pl-6"
               style={{ borderColor: "rgba(255,255,255,0.1)" }}
@@ -146,12 +143,22 @@ function AppContent() {
 
 export default function App() {
   return (
-    <ModelProvider>
-      <TaskProvider>
-        <PipelineProvider>
-          <AppContent />
-        </PipelineProvider>
-      </TaskProvider>
-    </ModelProvider>
+    <DemoGate>
+      <ErrorBoundary name="App">
+        <ModelProvider>
+          <ErrorBoundary name="Model">
+            <TaskProvider>
+              <ErrorBoundary name="Task">
+                <PipelineProvider>
+                  <ErrorBoundary name="Pipeline">
+                    <AppContent />
+                  </ErrorBoundary>
+                </PipelineProvider>
+              </ErrorBoundary>
+            </TaskProvider>
+          </ErrorBoundary>
+        </ModelProvider>
+      </ErrorBoundary>
+    </DemoGate>
   );
 }

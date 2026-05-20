@@ -23,6 +23,7 @@ interface ModelContextValue {
   state: ModelState;
   workerRef: React.MutableRefObject<Worker | null>;
   loadModel: () => void;
+  reloadModel: () => void;
   resumeDownload: () => void;
   generate: (messages: Array<{ role: string; content: string | Array<{ type: string; [key: string]: unknown }> }>, options?: { enableThinking?: boolean; maxNewTokens?: number }) => void;
   interrupt: () => void;
@@ -97,6 +98,8 @@ export function ModelProvider({ children }: { children: ReactNode }) {
             ...prev,
             stage: "loading",
             currentFile: typeof data === "string" ? data : prev.currentFile,
+            totalFiles: prev.totalFiles || 1,
+            completedFiles: prev.completedFiles + 1,
           }));
           break;
 
@@ -196,21 +199,29 @@ export function ModelProvider({ children }: { children: ReactNode }) {
 
   const loadModel = useCallback(() => {
     startTimeRef.current = performance.now();
-    setState((prev) => ({ ...prev, stage: "downloading", progress: 0, error: null, downloadRetry: null, downloadError: null }));
+    setState((prev) => ({ ...prev, stage: "downloading", progress: 0, error: null, downloadRetry: null, downloadError: null, totalFiles: 0, completedFiles: 0 }));
     workerRef.current?.postMessage({ type: "load" });
   }, []);
 
+  const reloadModel = useCallback(() => {
+    startTimeRef.current = performance.now();
+    setState((prev) => ({ ...prev, stage: "loading", progress: prev.progress, error: null, downloadRetry: null, downloadError: null, currentFile: "Reloading model..." }));
+    workerRef.current?.postMessage({ type: "reload" });
+  }, []);
+
   const resumeDownload = useCallback(() => {
-    // Transformers.js caches partial downloads, so re-calling load resumes
-    setState((prev) => ({
-      ...prev,
-      stage: "downloading",
-      error: null,
-      downloadRetry: null,
-      downloadError: null,
-      progress: prev.downloadError?.cachedPercent ?? 0,
-      currentFile: `Resuming from ${prev.downloadError?.cachedPercent ?? 0}%...`,
-    }));
+    setState((prev) => {
+      const cachedPercent = prev.downloadError?.cachedPercent ?? 0;
+      return {
+        ...prev,
+        stage: "downloading",
+        error: null,
+        downloadRetry: null,
+        downloadError: null,
+        progress: cachedPercent,
+        currentFile: `Resuming from ${cachedPercent}%...`,
+      };
+    });
     workerRef.current?.postMessage({ type: "load" });
   }, []);
 
@@ -237,7 +248,19 @@ export function ModelProvider({ children }: { children: ReactNode }) {
 
   const reset = useCallback(() => {
     workerRef.current?.postMessage({ type: "reset" });
-    setState(initialState);
+    setState((prev) => ({
+      ...prev,
+      stage: prev.stage === "ready" ? "ready" : prev.stage,
+      progress: 0,
+      currentFile: "",
+      estimatedTimeRemaining: "",
+      error: null,
+      tps: null,
+      numTokens: null,
+      isGenerating: false,
+      downloadRetry: null,
+      downloadError: null,
+    }));
   }, []);
 
   const clearError = useCallback(() => {
@@ -250,6 +273,7 @@ export function ModelProvider({ children }: { children: ReactNode }) {
         state,
         workerRef,
         loadModel,
+        reloadModel,
         resumeDownload,
         generate,
         interrupt,

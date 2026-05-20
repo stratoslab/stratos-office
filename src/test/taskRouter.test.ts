@@ -39,9 +39,10 @@ describe('taskRouter', () => {
 
   it('buildTaskMessages assembles correct messages for text task', () => {
     const messages = buildTaskMessages('general_text', { text: 'Hello world' });
-    expect(messages.length).toBe(1);
-    expect(messages[0].role).toBe('user');
-    expect(messages[0].content).toBe('Hello world');
+    expect(messages.length).toBe(2);
+    expect(messages[0].role).toBe('system');
+    expect(messages[1].role).toBe('user');
+    expect(messages[1].content).toBe('Hello world');
   });
 
   it('buildTaskMessages assembles correct messages for image task', () => {
