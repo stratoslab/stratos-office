@@ -76,7 +76,7 @@ Stratos Office runs Google's Gemma 4 E2B entirely in your browser using WebGPU. 
 | **RAM** | 4 GB minimum, 8 GB recommended |
 | **Storage** | ~2 GB for model cache (downloaded once) |
 
-Firefox and Safari are not supported — WebGPU is required.
+> **Note:** Firefox and Safari are not supported — WebGPU is required.
 
 ---
 
