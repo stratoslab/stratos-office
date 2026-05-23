@@ -143,3 +143,10 @@ Toggle **Offline Mode** in Settings to disable all web features entirely and run
 ## License
 
 Private project. All rights reserved.
+
+## Installation
+
+1. Clone the repository
+2. Open  in a browser with WebGPU support (Chrome 113+, Edge 113+)
+3. No build step required — runs entirely in the browser
+
