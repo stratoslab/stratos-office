@@ -67,6 +67,10 @@ Stratos Office runs Google's Gemma 4 E2B entirely in your browser using WebGPU. 
 
 ---
 
+## Installation
+
+No install needed — open https://dr.miromind.ai/ in Chrome 113+ or Edge 113+.
+
 ## System Requirements
 
 | | |
