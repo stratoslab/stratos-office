@@ -140,6 +140,72 @@ Toggle **Offline Mode** in Settings to disable all web features entirely and run
 
 ---
 
+## API Reference
+
+### Model API (`worker.js`)
+
+| Method | Description |
+|--------|-------------|
+| `load()` | Download and initialize Gemma 4 E2B model (~1–2 GB, cached) |
+| `generate(prompt)` | Run inference on a text prompt, returns full response |
+| `task(messages, taskType)` | Run multimodal task with system prompt routing, streaming output |
+| `interrupt()` | Cancel ongoing generation mid-stream |
+| `reset()` | Clear model state and cache |
+
+### Task Context API (`TaskContext`)
+
+| Method | Description |
+|--------|-------------|
+| `selectTask(taskType)` | Set active task type |
+| `setInput(input)` | Set task input (file, text, or both) |
+| `submitTask()` | Execute the active task |
+| `cancelTask()` | Cancel running task |
+| `clearOutput()` | Clear output panel |
+
+### File Handler API (`fileHandler.ts`)
+
+| Method | Description |
+|--------|-------------|
+| `validate(file, taskType)` | Validate MIME type + 50 MB size limit |
+| `readAsDataURL(file)` | Convert image to base64 data URL |
+| `extractAudio(file)` | Decode audio → 16 kHz mono Float32Array |
+| `extractPDFText(file)` | Extract text from PDF using pdfjs-dist |
+| `estimateTokens(text)` | Heuristic: `chars / 4` |
+
+### Audio Recorder API (`audioRecorder.ts`)
+
+| Method | Description |
+|--------|-------------|
+| `start()` | Begin recording from microphone |
+| `pause()` / `resume()` | Pause or resume recording |
+| `stop()` | Stop and decode to 16 kHz mono PCM Float32Array |
+
+### Web Search API (`mcpClient.ts`)
+
+| Method | Description |
+|--------|-------------|
+| `search(query)` | Search via TinyFish API (`GET api.search.tinyfish.ai`) |
+| `fetchContent(url)` | Fetch single page as Markdown |
+| `fetchMultiple(urls)` | Batch fetch multiple URLs |
+
+### Settings API (`settingsStore.ts`)
+
+| Key | Type | Description |
+|-----|------|-------------|
+| `stratos-settings` | object | `{ offlineMode, thinkingModeDefault, theme }` |
+| `stratos-tinyfish-key` | string | TinyFish API key (optional) |
+
+### History API (`historyStore.ts`)
+
+| Method | Description |
+|--------|-------------|
+| `addEntry(entry)` | Save task entry to IndexedDB |
+| `getAllEntries()` | Fetch all entries sorted by timestamp desc |
+| `deleteEntry(id)` | Delete a specific entry |
+| `clearAll()` | Clear all history |
+
+---
+
 ## License
 
 Private project. All rights reserved.
